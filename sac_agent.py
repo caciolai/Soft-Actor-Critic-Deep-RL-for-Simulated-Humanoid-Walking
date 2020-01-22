@@ -14,7 +14,7 @@ class Agent:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         # build policy network
-        self.policy = PolicyNetwork(num_inputs, action_space.shape[0], args.hidden_units).to(self.device)
+        self.policy = PolicyNetwork(num_inputs, action_space.shape[0], args.hidden_units, action_space).to(self.device)
         self.policy_optim = Adam(self.policy.parameters(), lr=args.lr)
 
         # build Q1 and Q2 networks

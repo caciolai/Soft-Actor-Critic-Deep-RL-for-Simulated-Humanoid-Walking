@@ -61,7 +61,7 @@ class QNetwork(nn.Module):
 
 
 class PolicyNetwork(nn.Module):
-    def __init__(self, state_dim, action_dim, hidden_units):
+    def __init__(self, state_dim, action_dim, hidden_units, action_space):
         super().__init__()
 
         self.linear1 = nn.Linear(state_dim, hidden_units)
@@ -71,6 +71,14 @@ class PolicyNetwork(nn.Module):
         self.log_std_linear = nn.Linear(hidden_units, action_dim)
 
         self.apply(initialize_parameters)
+
+        # action rescaling
+        if action_space is None:
+            self.action_scale = torch.tensor(1.)
+            self.action_bias = torch.tensor(0.)
+        else:
+            self.action_scale = torch.FloatTensor((action_space.high - action_space.low) / 2.)
+            self.action_bias = torch.FloatTensor((action_space.high + action_space.low) / 2.)
 
     def forward(self, state):
         x = F.relu(self.linear1(state))
@@ -86,10 +94,19 @@ class PolicyNetwork(nn.Module):
 
         # for reparametrization trick (mean + std * N(0,1))
         a_tilde = normal.rsample()
-        action = torch.tanh(a_tilde)
+        action = torch.tanh(a_tilde) * self.action_scale + self.action_bias
         log_prob = normal.log_prob(a_tilde)
 
         # enforcing action bounds
-        log_prob -= torch.log(1 - action.pow(2))
+        log_prob -= torch.log(self.action_scale * (1 - action.pow(2)) + self.action_bias)
         log_prob = log_prob.sum(1, keepdim=True)
-        return action, log_prob, mean, log_std
+
+        mean = torch.tanh(mean) * self.action_scale + self.action_bias
+        std = mean = torch.tanh(std) * self.action_scale + self.action_bias
+        return action, log_prob, mean, std
+
+    def to(self, *args, **kwargs):
+        device = args[0]
+        self.action_scale = self.action_scale.to(device)
+        self.action_bias = self.action_bias.to(device)
+        return super().to(device)

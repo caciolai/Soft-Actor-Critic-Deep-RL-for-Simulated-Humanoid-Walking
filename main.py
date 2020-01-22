@@ -25,12 +25,15 @@ def main():
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
     env.seed(args.seed)
-    print("\nEnvironment time horizon: {}".format(env._max_episode_steps))
+    print("\nEnvironment time horizon: {} steps".format(env._max_episode_steps))
+    print("Episode horizon (min{{max_episode_steps, env_horizon}}): {} steps".format(min(env._max_episode_steps, args.max_episode_steps)))
 
     # agent
     agent = Agent(env.observation_space.shape[0], env.action_space, args)
     policy_path, q1_path, q2_path, value_path = args.load_policy, args.load_q1_function, args.load_q2_function, args.load_value_function
     agent.load_networks_parameters(policy_path, q1_path, q2_path, value_path)
+
+    print("Using device: ", agent.device)
 
     # tensorboard writer
     writer = SummaryWriter(
