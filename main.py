@@ -112,7 +112,7 @@ def main():
                                                      round(episode_return, 2)))
 
             # if total number of steps has been exceeded
-            if total_steps > args.max_steps:
+            if total_steps >= args.max_steps:
                 break
 
     except KeyboardInterrupt:
