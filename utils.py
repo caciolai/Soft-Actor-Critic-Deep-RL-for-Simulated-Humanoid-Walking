@@ -20,8 +20,11 @@ def handle_parser():
     parser.add_argument("--minibatch_size", type=int, default=256, metavar="INT",
                         help="Minibatch size (default: 256)")
 
-    parser.add_argument("--num_steps", type=int, default=10000, metavar="INT",
-                        help="Maximum number of timesteps for episode (default: 1e4)")
+    parser.add_argument("--max_episode_steps", type=int, default=1000, metavar="INT",
+                        help="Maximum number of timesteps for episode (default: 1e3)")
+
+    parser.add_argument("--max_steps", type=int, default=1000000, metavar="INT",
+                        help="Maximum number of timesteps for episode (default: 1e6)")
 
     parser.add_argument("--hidden_units", type=int, default=256, metavar="INT",
                         help="Number of units in hidden layers (default: 256)")

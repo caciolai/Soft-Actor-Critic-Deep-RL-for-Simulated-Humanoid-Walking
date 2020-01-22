@@ -5,6 +5,7 @@ import itertools
 import torch
 from sac_agent import Agent
 from tensorboardX import SummaryWriter
+from texttable import Texttable
 
 from replay_buffer import ReplayBuffer
 from utils import handle_parser
@@ -13,13 +14,18 @@ from utils import handle_parser
 def main():
     parser = handle_parser()
     args = parser.parse_args()
-    print(args)
+
+    t = Texttable()
+    t.add_rows([["Argument", "Value"]] + [[arg, getattr(args, arg)] for arg in vars(args)])
+    print("Arguments:")
+    print(t.draw())
 
     # environment setup
     env = gym.make("MountainCarContinuous-v0")
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
     env.seed(args.seed)
+    print("time horizon: {}".format(env._max_episode_steps))
 
     # agent
     agent = Agent(env.observation_space.shape[0], env.action_space, args)
@@ -57,13 +63,12 @@ def main():
                 total_steps += 1
                 episode_return += reward
 
-                done = False if episode_steps == env._max_episode_steps else done
+                # ignore done signal if not actually dependent on state
+                mask = False if episode_steps == env._max_episode_steps else done
 
                 # Append transition to replay buffer
-                buffer.push(state, action, reward, next_state, float(done))
+                buffer.push(state, action, reward, next_state, float(mask))
                 state = next_state
-
-                print(episode_steps, done)
 
                 # if replay buffer is sufficiently large to contain at least a minibatch
                 if len(buffer) > args.minibatch_size:
@@ -83,8 +88,8 @@ def main():
                         updates += 1
 
 
-                # if number of steps has been exceeded
-                if episode_steps > args.num_steps:
+                # if max number of episode steps has been exceeded
+                if episode_steps > args.episode_steps:
                     break
 
             # print/write stats to tensorboard
@@ -98,7 +103,9 @@ def main():
                                                      episode_steps,
                                                      round(episode_return, 2)))
 
-            break
+            # if total number of steps has been exceeded
+            if total_steps > args.max_steps:
+                break
 
     except KeyboardInterrupt:
         print("\nKeyboard interrupt received")
