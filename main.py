@@ -25,7 +25,7 @@ def main():
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
     env.seed(args.seed)
-    print("time horizon: {}".format(env._max_episode_steps))
+    print("\nEnvironment time horizon: {}".format(env._max_episode_steps))
 
     # agent
     agent = Agent(env.observation_space.shape[0], env.action_space, args)
@@ -63,6 +63,9 @@ def main():
                 total_steps += 1
                 episode_return += reward
 
+                if args.verbose >= 2:
+                    print(next_state, reward, done)
+
                 # ignore done signal if not actually dependent on state
                 mask = False if episode_steps == env._max_episode_steps else done
 
@@ -80,6 +83,11 @@ def main():
                             updates
                         )
 
+                        if args.verbose >= 2:
+                            print("Value loss: {:.3f}. Q1 loss: {:.3f}. Q2 loss: {:.3f}. Policy loss: {:.3f}".format(
+                                value_loss, q1_loss, q2_loss, policy_loss
+                            ))
+
                         # write losses to tensorboard for visualization
                         writer.add_scalar("loss/value", value_loss, updates)
                         writer.add_scalar("loss/Q1", q1_loss, updates)
@@ -89,7 +97,7 @@ def main():
 
 
                 # if max number of episode steps has been exceeded
-                if episode_steps > args.episode_steps:
+                if episode_steps > args.max_episode_steps:
                     break
 
             # print/write stats to tensorboard
