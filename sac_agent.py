@@ -116,16 +116,14 @@ class Agent:
 
 
     def save_networks_parameters(self):
-        prefix = "SavedAgents/"
+        prefix = "SavedAgents/" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         if not os.path.exists(prefix):
             os.makedirs(prefix)
 
-        suffix = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-
-        policy_path = prefix + "policy_{}".format(suffix)
-        q1_path = prefix + "q1_{}".format(suffix)
-        q2_path = prefix + "q2_{}".format(suffix)
-        value_path = prefix + "value_{}".format(suffix)
+        policy_path = prefix + "policy_net_params"
+        q1_path = prefix + "q1_net_params"
+        q2_path = prefix + "q2_net_params"
+        value_path = prefix + "value_net_params"
 
         print("Saving parameters to {}, {}, {} and {}".format(policy_path, q1_path, q2_path, value_path))
 
