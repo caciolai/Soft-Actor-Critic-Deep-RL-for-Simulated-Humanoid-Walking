@@ -129,7 +129,7 @@ def main():
                 print("Episode: {}, "
                       "total steps: {}, "
                       "episode steps: {}, "
-                      "episode return: {},"
+                      "episode return: {}, "
                       "epsilon randomness: {}".format(i_episode,
                                                      total_steps,
                                                      episode_steps,
