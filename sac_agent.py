@@ -122,16 +122,18 @@ class Agent:
         torch.save(self.value.state_dict(), value_path)
 
 
-    def load_networks_parameters(self, policy_path, q1_path, q2_path, value_path):
+    def load_networks_parameters(self, policy_path, q_path, value_path):
         if policy_path is not None:
+            policy_path += ("/" + "policy_net_params")
             print("Loading parameters for policy from {}".format(policy_path))
             self.policy.load_state_dict(torch.load(policy_path))
-        if q1_path is not None:
-            print("Loading parameters for Q functions from {}".format(q1_path))
+        if q_path is not None:
+            q1_path = q_path + ("/" + "q1_net_params")
+            q2_path = q_path + ("/" + "q2_net_params")
+            print("Loading parameters for Q functions from {}".format(q_path))
             self.Q1.load_state_dict(torch.load(q1_path))
-        if q2_path is not None:
-            print("Loading parameters for Q functions from {}".format(q2_path))
-            self.Q1.load_state_dict(torch.load(q2_path))
+            self.Q2.load_state_dict(torch.load(q2_path))
         if value_path is not None:
+            policy_path += ("/" + "q1_net_params")
             print("Loading parameters for value function from {}".format(value_path))
             self.value.load_state_dict(torch.load(value_path))
