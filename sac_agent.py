@@ -116,7 +116,7 @@ class Agent:
 
 
     def save_networks_parameters(self):
-        prefix = "SavedAgents/" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        prefix = "SavedAgents/" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + "/"
         if not os.path.exists(prefix):
             os.makedirs(prefix)
 
