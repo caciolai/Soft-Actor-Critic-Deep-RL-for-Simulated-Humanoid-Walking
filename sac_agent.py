@@ -10,7 +10,6 @@ class Agent:
         self.action_space = action_space
         self.gamma = args.gamma
         self.tau = args.tau
-        self.alpha = args.alpha
         self.target_update_interval = args.target_update_interval
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -31,6 +30,12 @@ class Agent:
         self.value_target = ValueNetwork(num_inputs, action_space.shape[0], args.hidden_units, self.device).to(self.device)
         self.value_optimizer = Adam(self.value.parameters(), lr=args.lr)
         self.value_criterion = nn.MSELoss()
+
+        # entropy temperature
+        self.alpha = args.alpha
+        self.target_entropy = -torch.prod(torch.Tensor(self.action_space.shape).to(self.device)).item()
+        self.log_alpha = torch.zeros(1, requires_grad=True, device=self.device)
+        self.alpha_optimizer = Adam([self.log_alpha], lr=args.lr)
 
         # initialize target value net parameters equal to value net parameters
         hard_update(self.value_target, self.value)
@@ -65,7 +70,7 @@ class Agent:
         predicted_value = self.value(state_batch)
         sampled_action_batch, log_prob_batch, _, _ = self.policy.sample(state_batch)
 
-        # Training Q Function
+        # optimize Q function
         next_target_value = self.value_target(next_state_batch)
         q_target_value = reward_batch + (1 - done_batch) * self.gamma * next_target_value
         q1_loss = self.Q1_criterion(predicted_q1_value, q_target_value.detach())
@@ -79,7 +84,7 @@ class Agent:
         q2_loss.backward()
         self.Q2_optimizer.step()
 
-        # Training Value Function
+        # optimize value function
         sampled_q_value = torch.min(self.Q1(state_batch, sampled_action_batch), self.Q2(state_batch, sampled_action_batch))
         predicted_target_value = sampled_q_value - log_prob_batch
         value_loss = self.value_criterion(predicted_value, predicted_target_value.detach())
@@ -88,12 +93,27 @@ class Agent:
         value_loss.backward()
         self.value_optimizer.step()
 
-        # Training Policy Function
+        # optimize policy
         policy_loss = (log_prob_batch - sampled_q_value).mean()
 
         self.policy_optimizer.zero_grad()
         policy_loss.backward()
         self.policy_optimizer.step()
+
+        # optimize alpha
+        target_entropy = -torch.prod(torch.Tensor(self.action_space.shape).to(self.device)).item()
+        log_alpha = torch.zeros(1, requires_grad=True, device=self.device)
+
+        # Compute alpha loss.
+        alpha_loss = (log_alpha * (-log_prob_batch - target_entropy).detach()).mean()
+
+        # Update alpha
+        alpha_loss = (self.log_alpha * (-log_prob_batch - self.target_entropy).detach()).mean()
+
+        self.alpha_optimizer.zero_grad()
+        alpha_loss.backward()
+        self.alpha_optimizer.step()
+        self.alpha = self.log_alpha.exp()
 
         # update target value function
         if updates % self.target_update_interval == 0:
