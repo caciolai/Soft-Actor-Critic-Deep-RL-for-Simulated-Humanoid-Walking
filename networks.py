@@ -10,7 +10,7 @@ EPSILON = 1e-6
 # update target network parameters with soft update (exponentially moving average)
 def soft_update(target, source, tau):
     for target_param, param in zip(target.parameters(), source.parameters()):
-        target_param.data.copy_(target_param.data * (1.0 - tau) + param.data * tau)
+        target_param.data.copy_(tau * target_param.data + (1.0 - tau) * target_param)
 
 # update target network parameters with hard update (just copy)
 def hard_update(target, source):
@@ -92,6 +92,6 @@ class PolicyNetwork(nn.Module):
         noise = normal.sample().to(self.device)
         a_tilde = mean + std*noise
         action = torch.tanh(a_tilde)
-        log_prob = Normal(mean, std).log_prob(a_tilde) - torch.log(1 - action.pow(2) + EPSILON).sum()
+        log_prob = Normal(mean, std).log_prob(a_tilde) - torch.log(1 - action.pow(2) + EPSILON)
 
         return action, log_prob, mean, std

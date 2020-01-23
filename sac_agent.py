@@ -67,7 +67,7 @@ class Agent:
 
         # Training Q Function
         next_target_value = self.value_target(next_state_batch)
-        q_target_value = reward_batch + (torch.tensor(1.) - done_batch) * self.gamma * next_target_value
+        q_target_value = reward_batch + (1 - done_batch) * self.gamma * next_target_value
         q1_loss = self.Q1_criterion(predicted_q1_value, q_target_value.detach())
         q2_loss =  self.Q2_criterion(predicted_q2_value, q_target_value.detach())
 

@@ -22,7 +22,7 @@ def train(env, agent, args):
     i_episode = 1
     total_steps = 0
     updates = 0
-    epsilon = 1
+    epsilon = args.epsilon
     # action_magnitudes = []
     try:
         while i_episode < args.max_steps:
@@ -32,17 +32,17 @@ def train(env, agent, args):
             state = env.reset()
 
             # # decreasing the epsilon randomness at each step
-            epsilon *= args.epsilon
+            #
 
             while not done:
                 if args.render:
                     env.render()
 
-                # sample action from epsilon random policy
+                # # sample action from epsilon random policy
                 if torch.rand(1)[0] <= epsilon:
                     action = env.action_space.sample()
-                # if total_steps < args.exploratory_steps:
-                #     action = env.action_space.sample()
+                elif total_steps < args.exploratory_steps:
+                    action = env.action_space.sample()
                 else:
                     action = agent.choose_action(state)
 
@@ -115,6 +115,7 @@ def train(env, agent, args):
                 break
 
             i_episode += 1
+            epsilon *= args.epsilon
 
     except KeyboardInterrupt:
         print("\nKeyboard interrupt received")
