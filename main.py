@@ -1,12 +1,9 @@
-import datetime
 import gym
 import numpy as np
 import torch
 from sac_agent import Agent
-from tensorboardX import SummaryWriter
 from texttable import Texttable
 
-from replay_buffer import ReplayBuffer
 from utils import handle_parser
 from train import train
 
@@ -25,14 +22,6 @@ def main():
     policy_path, q1_path, q2_path, value_path = args.load_policy, args.load_q1_function, args.load_q2_function, args.load_value_function
     agent.load_networks_parameters(policy_path, q1_path, q2_path, value_path)
 
-    # tensorboard writer
-    if args.tensorboard:
-        writer = SummaryWriter(
-            logdir="TensorBoardLogs/{}".format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")))
-
-    # replay replay_buffer
-    replay_buffer = ReplayBuffer(args.replay_size)
-
     if args.verbose >= 1:
         print("Setup completed. Settings:\n")
         t = Texttable()
@@ -48,7 +37,7 @@ def main():
         print("\nStarting training.")
 
     # training
-    train(env, agent, replay_buffer, writer, args)
+    train(env, agent, args)
 
 
 if __name__ == "__main__":

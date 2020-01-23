@@ -1,11 +1,22 @@
 import datetime
-import numpy as np
+from tensorboardX import SummaryWriter
+from replay_buffer import ReplayBuffer
 
-def train(env, agent, replay_buffer, writer, args):
+
+def train(env, agent, args):
 
     # saved agents dir
     if args.save_params_interval:
         prefix = "SavedAgents/{}".format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+
+
+    # tensorboard writer
+    if args.tensorboard:
+        writer = SummaryWriter(
+            logdir="TensorBoardLogs/{}".format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")))
+
+    # replay replay_buffer
+    replay_buffer = ReplayBuffer(args.replay_size)
 
     i_episode = 1
     total_steps = 0
