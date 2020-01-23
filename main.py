@@ -8,41 +8,49 @@ from tensorboardX import SummaryWriter
 from texttable import Texttable
 
 from replay_buffer import ReplayBuffer
-from utils import handle_parser, mcc_custom_reward
+from utils import handle_parser
 
 
 def main():
     parser = handle_parser()
     args = parser.parse_args()
 
-    t = Texttable()
-    t.set_cols_dtype(['t', 'a'])
-    t.add_rows([["Argument", "Value"]] + [[arg, getattr(args, arg)] for arg in vars(args)])
-    print(t.draw())
-
     # environment setup
     env = gym.make("MountainCarContinuous-v0")
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
     env.seed(args.seed)
-    print("\nEnvironment time horizon: {} steps".format(env._max_episode_steps))
-    print("Episode horizon (min{{max_episode_steps, env_horizon}}): {} steps".format(min(env._max_episode_steps, args.max_episode_steps)))
 
     # agent
     agent = Agent(env.observation_space.shape[0], env.action_space, args)
     policy_path, q1_path, q2_path, value_path = args.load_policy, args.load_q1_function, args.load_q2_function, args.load_value_function
     agent.load_networks_parameters(policy_path, q1_path, q2_path, value_path)
 
-    print("Using device: ", agent.device)
-
     # tensorboard writer
     if args.tensorboard:
         writer = SummaryWriter(
             logdir="TensorBoardLogs/{}".format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")))
 
+    # saved agents dir
+    if args.save_params_interval:
+        prefix = "SavedAgents/{}".format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+
     # replay buffer
     buffer = ReplayBuffer(args.replay_size)
 
+    if args.verbose >= 1:
+        print("Setup completed. Settings:\n")
+        t = Texttable()
+        t.set_cols_dtype(['t', 'e'])
+        t.add_rows([["Argument", "Value"]] + [[arg, getattr(args, arg)] for arg in vars(args)])
+        print(t.draw())
+
+        print("\nEnvironment time horizon: {} steps".format(env._max_episode_steps))
+        print("Episode horizon (min{{max_episode_steps, env_horizon}}): "
+              "{} steps".format(min(env._max_episode_steps, args.max_episode_steps)))
+
+        print("\nUsing device: ", torch.cuda.get_device_properties(agent.device))
+        print("\nStarting learning...\n")
 
     # training
     total_steps = 0
@@ -72,8 +80,6 @@ def main():
                 # ignore done signal if not actually dependent on state
                 mask = False if episode_steps == env._max_episode_steps else done
 
-                # apply custom transformation to reward signal
-                reward = mcc_custom_reward(state, reward)
                 episode_return += reward
 
                 # Append transition to replay buffer
@@ -120,6 +126,9 @@ def main():
                                                      episode_steps,
                                                      round(episode_return, 2)))
 
+            if args.save_params_interval and i_episode % args.save_params_interval == 0:
+                agent.save_networks_parameters(prefix)
+
             # if total number of steps has been exceeded
             if total_steps >= args.max_steps:
                 break
@@ -128,7 +137,10 @@ def main():
         print("\nKeyboard interrupt received")
     finally:
         print("\nTerminating...")
-        agent.save_networks_parameters()
+        if args.save_params_interval:
+            agent.save_networks_parameters(prefix)
+        else:
+            agent.save_networks_parameters()
         env.close()
 
 

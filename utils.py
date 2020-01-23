@@ -2,6 +2,8 @@ import argparse
 
 def handle_parser():
     parser = argparse.ArgumentParser(description="PyTorch SAC")
+    parser.add_argument("--epsilon", type=float, default=0.99, metavar="FLOAT",
+                        help="Exponential factor of decrease of epsilon randomness (default: 0.99)")
     parser.add_argument("--gamma", type=float, default=0.99, metavar="FLOAT",
                         help="Discount factor for reward (default: 0.99)")
 
@@ -59,13 +61,9 @@ def handle_parser():
     parser.add_argument("--load_value_function", type=str, default=None, metavar="models/foo",
                         help="Path of Value function network parameters (default: None)")
 
+    parser.add_argument("--save_params_interval", type=int, default=None, metavar="INT",
+                        help="If set, interval of episodes to save net params (default: None)")
 
     return parser
 
-
-def mcc_custom_reward(state, reward, relative_importance=0.5):
-    distance_from_goal = 0.5 - state[0]
-    custom_reward = relative_importance * abs(reward) / (distance_from_goal)**2
-
-    return reward + custom_reward
 
