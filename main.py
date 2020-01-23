@@ -16,6 +16,7 @@ def main():
     args = parser.parse_args()
 
     t = Texttable()
+    t.set_cols_dtype(['t', 'a'])
     t.add_rows([["Argument", "Value"]] + [[arg, getattr(args, arg)] for arg in vars(args)])
     print(t.draw())
 
