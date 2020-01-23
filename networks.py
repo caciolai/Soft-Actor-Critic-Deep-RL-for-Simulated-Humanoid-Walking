@@ -17,12 +17,6 @@ def hard_update(target, source):
     for target_param, param in zip(target.parameters(), source.parameters()):
         target_param.data.copy_(param.data)
 
-# initialize parameters
-def initialize_parameters(layer):
-    if isinstance(layer, nn.Linear):
-        torch.nn.init.xavier_uniform_(layer.weight, gain=1)
-        torch.nn.init.constant_(layer.bias, 0)
-
 
 class ValueNetwork(nn.Module):
     def __init__(self, state_dim, action_dim, hidden_units, device):
@@ -31,8 +25,6 @@ class ValueNetwork(nn.Module):
         self.linear1 = nn.Linear(state_dim, hidden_units)
         self.linear2 = nn.Linear(hidden_units, hidden_units)
         self.linear3 = nn.Linear(hidden_units, action_dim)
-
-        self.apply(initialize_parameters)
 
     def forward(self, state):
         h1 = F.relu(self.linear1(state))
@@ -50,8 +42,6 @@ class QNetwork(nn.Module):
         self.linear1 = nn.Linear(state_dim + action_dim, hidden_units)
         self.linear2 = nn.Linear(hidden_units, hidden_units)
         self.linear3 = nn.Linear(hidden_units, action_dim)
-
-        self.apply(initialize_parameters)
 
     def forward(self, state, action):
         x = torch.cat([state, action], 1)
@@ -74,8 +64,6 @@ class PolicyNetwork(nn.Module):
         self.mean_linear = nn.Linear(hidden_units, action_dim)
         self.log_std_linear = nn.Linear(hidden_units, action_dim)
 
-        self.apply(initialize_parameters)
-
     def forward(self, state):
         h1 = F.relu(self.linear1(state))
         h2 = F.relu(self.linear2(h1))
@@ -90,8 +78,7 @@ class PolicyNetwork(nn.Module):
 
         normal = Normal(0, 1)
         noise = normal.sample().to(self.device)
-        a_tilde = mean + std*noise
-        action = torch.tanh(a_tilde)
-        log_prob = Normal(mean, std).log_prob(a_tilde) - torch.log(1 - action.pow(2) + EPSILON)
-
+        z = mean + std*noise
+        action = torch.tanh(z)
+        log_prob = Normal(mean, std).log_prob(z) - torch.log(1 - action.pow(2) + EPSILON).sum(1, keepdim=True)
         return action, log_prob, mean, std
