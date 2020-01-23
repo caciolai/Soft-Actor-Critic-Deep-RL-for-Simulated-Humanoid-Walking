@@ -139,8 +139,6 @@ def main():
 
 
             if args.save_params_interval and i_episode % args.save_params_interval == 0:
-                if args.verbose >= 1:
-                    print("Saving parameters at {}" + prefix)
                 agent.save_networks_parameters(prefix)
 
             # if total number of steps has been exceeded
