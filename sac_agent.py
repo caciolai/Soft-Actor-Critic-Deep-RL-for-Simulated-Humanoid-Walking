@@ -37,7 +37,12 @@ class Agent:
         state = torch.FloatTensor(state).to(self.device).unsqueeze(0)
         action, _, _, _ = self.policy.sample(state)
         action = action.detach().cpu().numpy()[0]
-        return action
+        return self.rescale_action(action)
+
+
+    def rescale_action(self, action):
+        return action * (self.action_space.high - self.action_space.low) / 2.0 + \
+               (self.action_space.high + self.action_space.low) / 2.0
 
 
     def update_networks_parameters(self, replay_buffer, minibatch_size, updates):
