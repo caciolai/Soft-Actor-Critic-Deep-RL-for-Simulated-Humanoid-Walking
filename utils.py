@@ -37,8 +37,8 @@ def handle_parser():
     parser.add_argument("--minibatch_size", type=int, default=256, metavar="",
                         help="Minibatch size (default: 256)")
 
-    # parser.add_argument("--epsilon", type=float, default=0.99, metavar="",
-    #                     help="Exponential factor of decrease of epsilon randomness (default: 0.99)")
+    parser.add_argument("--epsilon", type=float, default=0.95, metavar="",
+                        help="Exponential factor of decrease of epsilon randomness (default: 0.95)")
 
     parser.add_argument("--max_steps", type=int, default=1000000, metavar="",
                         help="Maximum number of timesteps (default: 1e6)")

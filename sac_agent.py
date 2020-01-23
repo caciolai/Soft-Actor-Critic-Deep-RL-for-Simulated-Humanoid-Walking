@@ -37,7 +37,7 @@ class Agent:
 
 
     def choose_action(self, state):
-        state = torch.FloatTensor(state).to(self.device).unsqueeze(0)
+        state = torch.from_numpy(state).float().unsqueeze(0).to(self.device)
         action, _, _, _ = self.policy.sample(state)
         action = action.detach().cpu().numpy()[0]
         return self.rescale_action(action)
@@ -54,11 +54,11 @@ class Agent:
             batch_size=minibatch_size
         )
         # cast and move batches to GPU
-        state_batch = torch.FloatTensor(state_batch).to(self.device)
-        next_state_batch = torch.FloatTensor(next_state_batch).to(self.device)
-        action_batch = torch.FloatTensor(action_batch).to(self.device)
-        reward_batch = torch.FloatTensor(reward_batch).to(self.device).unsqueeze(1)
-        done_batch = torch.FloatTensor(done_batch).to(self.device).unsqueeze(1)
+        state_batch = torch.from_numpy(state_batch).float().to(self.device)
+        next_state_batch = torch.from_numpy(next_state_batch).float().to(self.device)
+        action_batch = torch.from_numpy(action_batch).float().to(self.device)
+        reward_batch = torch.from_numpy(reward_batch).float().unsqueeze(1).to(self.device)
+        done_batch = torch.from_numpy(done_batch).float().unsqueeze(1).to(self.device)
 
         predicted_q1_value = self.Q1(state_batch, action_batch)
         predicted_q2_value = self.Q2(state_batch, action_batch)
@@ -67,7 +67,7 @@ class Agent:
 
         # Training Q Function
         next_target_value = self.value_target(next_state_batch)
-        q_target_value = reward_batch + (1 - done_batch) * self.gamma * next_target_value
+        q_target_value = reward_batch + (torch.tensor(1.) - done_batch) * self.gamma * next_target_value
         q1_loss = self.Q1_criterion(predicted_q1_value, q_target_value.detach())
         q2_loss =  self.Q2_criterion(predicted_q2_value, q_target_value.detach())
 

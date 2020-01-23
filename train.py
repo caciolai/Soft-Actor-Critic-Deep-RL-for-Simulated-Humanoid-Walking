@@ -1,4 +1,5 @@
 import datetime
+import torch
 from tensorboardX import SummaryWriter
 from replay_buffer import ReplayBuffer
 
@@ -21,7 +22,7 @@ def train(env, agent, args):
     i_episode = 1
     total_steps = 0
     updates = 0
-    # epsilon = 1
+    epsilon = 1
     # action_magnitudes = []
     try:
         while i_episode < args.max_steps:
@@ -31,17 +32,17 @@ def train(env, agent, args):
             state = env.reset()
 
             # # decreasing the epsilon randomness at each step
-            # epsilon *= args.epsilon
+            epsilon *= args.epsilon
 
             while not done:
                 if args.render:
                     env.render()
 
-                # # sample action from epsilon random policy
-                # if torch.rand(1)[0] <= epsilon:
-                #     action = env.action_space.sample()
-                if total_steps < args.exploratory_steps:
+                # sample action from epsilon random policy
+                if torch.rand(1)[0] <= epsilon:
                     action = env.action_space.sample()
+                # if total_steps < args.exploratory_steps:
+                #     action = env.action_space.sample()
                 else:
                     action = agent.choose_action(state)
 
