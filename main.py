@@ -56,6 +56,7 @@ def main():
     total_steps = 0
     updates = 0
     epsilon = 1
+    action_magnitudes = []
     try:
         for i_episode in itertools.count(1):
             episode_return = 0
@@ -77,6 +78,7 @@ def main():
                 else:
                     action = agent.select_action(state)
 
+                action_magnitudes.append(np.abs(action))
                 # perform action and observe state and reward
                 next_state, reward, done, _ = env.step(action)
                 episode_steps += 1
@@ -126,6 +128,7 @@ def main():
             # print/write stats to tensorboard
             if args.tensorboard:
                 writer.add_scalar("episode_return", episode_return, i_episode)
+                writer.add_scalar("mean action magnitude", np.array(action_magnitudes).mean(), i_episode)
             if args.verbose >= 1:
                 print("Episode: {}, "
                       "total steps: {}, "

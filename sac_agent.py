@@ -66,12 +66,12 @@ class Agent:
             Q_hat = reward_batch + done_batch * (1 - self.gamma) * V_targ
 
         # compute Q functions on state action pairs from buffer
-        q1_D = self.Q1(state_batch, action_batch).to(self.device)
-        q2_D = self.Q2(state_batch, action_batch).to(self.device)
+        q1_D = self.Q1(state_batch, action_batch)
+        q2_D = self.Q2(state_batch, action_batch)
 
         # compute both soft Q functions loss
-        Jq1 = F.mse_loss(q1_D, Q_hat).to(self.device)
-        Jq2 = F.mse_loss(q2_D, Q_hat).to(self.device)
+        Jq1 = F.mse_loss(q1_D, Q_hat)
+        Jq2 = F.mse_loss(q2_D, Q_hat)
 
         # Jp = E_{(s~D), (a~pi)}[ ( log pi(a | s) - Q(s, a) )^2 ]
         # with reparametrization trick to express it in terms of noise
@@ -79,9 +79,9 @@ class Agent:
 
         # sample actions from policy and compute Q functions with these sampled actions
         pi, log_pi, mean, log_std = self.policy.sample(state_batch)
-        q1_pi = self.Q1(state_batch, pi).to(self.device)
-        q2_pi = self.Q2(state_batch, pi).to(self.device)
-        min_q_pi = torch.min(q1_pi, q2_pi).to(self.device)
+        q1_pi = self.Q1(state_batch, pi)
+        q2_pi = self.Q2(state_batch, pi)
+        min_q_pi = torch.min(q1_pi, q2_pi)
 
         Jp = ((self.alpha * log_pi) - min_q_pi).mean()
 
@@ -89,12 +89,12 @@ class Agent:
         # using sampled actions
         # and also minimum of the two Q(s,a)
 
-        vf = self.value(state_batch).to(self.device)
+        vf = self.value(state_batch)
         # again, since value target, no need to include computation graph for gradient
         with torch.no_grad():
             vf_target = min_q_pi - (self.alpha * log_pi)
 
-        Jv = F.mse_loss(vf, vf_target).to(self.device)
+        Jv = F.mse_loss(vf, vf_target)
 
         # update all parameters by one step SGD
         self.value_optim.zero_grad()
@@ -123,14 +123,14 @@ class Agent:
 
     def save_networks_parameters(self, prefix=None):
         if not prefix:
-            prefix = "SavedAgents/" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + "/"
+            prefix = "SavedAgents/" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         if not os.path.exists(prefix):
             os.makedirs(prefix)
 
-        policy_path = prefix + "policy_net_params"
-        q1_path = prefix + "q1_net_params"
-        q2_path = prefix + "q2_net_params"
-        value_path = prefix + "value_net_params"
+        policy_path = prefix + "/" + "policy_net_params"
+        q1_path = prefix + "/" + "q1_net_params"
+        q2_path = prefix + "/" + "q2_net_params"
+        value_path = prefix + "/" + "value_net_params"
 
         print("Saving parameters to {}, {}, {} and {}".format(policy_path, q1_path, q2_path, value_path))
 
