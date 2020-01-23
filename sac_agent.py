@@ -7,6 +7,7 @@ from networks import *
 class Agent:
     def __init__(self, num_inputs, action_space, args):
         # set hyperparameters
+        self.action_space = action_space
         self.gamma = args.gamma
         self.tau = args.tau
         self.alpha = args.alpha
@@ -14,7 +15,7 @@ class Agent:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         # build policy network
-        self.policy = PolicyNetwork(num_inputs, action_space.shape[0], args.hidden_units, action_space).to(self.device)
+        self.policy = PolicyNetwork(num_inputs, action_space.shape[0], args.hidden_units).to(self.device)
         self.policy_optim = Adam(self.policy.parameters(), lr=args.lr)
 
         # build Q1 and Q2 networks
