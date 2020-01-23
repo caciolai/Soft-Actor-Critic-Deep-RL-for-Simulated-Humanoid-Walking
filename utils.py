@@ -59,14 +59,8 @@ def handle_parser():
     parser.add_argument("--save_params_interval", type=int, default=None, metavar="",
                         help="If set, interval of episodes to save net params (default: None)")
 
-    parser.add_argument("--load_policy", type=str, default=None, metavar="",
-                        help="Dir of Policy network parameters (default: None)")
-
-    parser.add_argument("--load_q_function", type=str, default=None, metavar="",
-                        help="Dir of (both) Q function network parameters (default: None)")
-
-    parser.add_argument("--load_value_function", type=str, default=None, metavar="",
-                        help="Dir of Value function network parameters (default: None)")
+    parser.add_argument("--load_params", type=str, default=None, metavar="",
+                        help="Dir of the three NNs parameters (default: None)")
 
     return parser
 

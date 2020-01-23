@@ -19,11 +19,8 @@ def main():
 
     # agent
     agent = Agent(env.observation_space.shape[0], env.action_space, args)
-    policy_path, q_path, value_path = args.load_policy, \
-                                               args.load_q_function, \
-                                               args.load_value_function
-
-    agent.load_networks_parameters(policy_path, q_path, value_path)
+    params_path = args.load_params
+    agent.load_networks_parameters(params_path)
 
     if args.verbose >= 1:
         print("Setup completed. Settings:\n")
