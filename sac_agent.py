@@ -146,4 +146,4 @@ class Agent:
             self.Q1.load_state_dict(torch.load(q2_path))
         if value_path is not None:
             print("Loading parameters for value function from {}".format(value_path))
-            self.value.load_state.dict(torch.load(value_path))
+            self.value.load_state_dict(torch.load(value_path))
