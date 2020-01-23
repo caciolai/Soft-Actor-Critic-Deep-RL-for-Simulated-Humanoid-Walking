@@ -44,6 +44,9 @@ def handle_parser():
     parser.add_argument("--verbose", type=int, default=1, metavar="INT",
                         help="Verbose level [1..3] (default: 1)")
 
+    parser.add_argument("--tensorboard", action="store_true",
+                        help="Use tensorboard for tracking (default: False)")
+
     parser.add_argument("--load_policy", type=str, default=None, metavar="models/foo",
                         help="Path of Policy network parameters (default: None)")
 
@@ -58,3 +61,11 @@ def handle_parser():
 
 
     return parser
+
+
+def mcc_custom_reward(state, reward, relative_importance=0.5):
+    distance_from_goal = 0.5 - state[0]
+    custom_reward = relative_importance * abs(reward) / (distance_from_goal)**2
+
+    return reward + custom_reward
+

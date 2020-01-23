@@ -8,7 +8,7 @@ from tensorboardX import SummaryWriter
 from texttable import Texttable
 
 from replay_buffer import ReplayBuffer
-from utils import handle_parser
+from utils import handle_parser, mcc_custom_reward
 
 
 def main():
@@ -17,7 +17,6 @@ def main():
 
     t = Texttable()
     t.add_rows([["Argument", "Value"]] + [[arg, getattr(args, arg)] for arg in vars(args)])
-    print("Arguments:")
     print(t.draw())
 
     # environment setup
@@ -36,8 +35,9 @@ def main():
     print("Using device: ", agent.device)
 
     # tensorboard writer
-    writer = SummaryWriter(
-        logdir="TensorBoardLogs/{}".format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")))
+    if args.tensorboard:
+        writer = SummaryWriter(
+            logdir="TensorBoardLogs/{}".format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")))
 
     # replay buffer
     buffer = ReplayBuffer(args.replay_size)
@@ -64,13 +64,16 @@ def main():
                 next_state, reward, done, _ = env.step(action)
                 episode_steps += 1
                 total_steps += 1
-                episode_return += reward
 
                 if args.verbose >= 2:
                     print(next_state, reward, done)
 
                 # ignore done signal if not actually dependent on state
                 mask = False if episode_steps == env._max_episode_steps else done
+
+                # apply custom transformation to reward signal
+                reward = mcc_custom_reward(state, reward)
+                episode_return += reward
 
                 # Append transition to replay buffer
                 buffer.push(state, action, reward, next_state, float(mask))
@@ -92,10 +95,11 @@ def main():
                             ))
 
                         # write losses to tensorboard for visualization
-                        writer.add_scalar("loss/value", value_loss, updates)
-                        writer.add_scalar("loss/Q1", q1_loss, updates)
-                        writer.add_scalar("loss/Q2", q2_loss, updates)
-                        writer.add_scalar("loss/policy", policy_loss, updates)
+                        if args.tensorboard:
+                            writer.add_scalar("loss/value", value_loss, updates)
+                            writer.add_scalar("loss/Q1", q1_loss, updates)
+                            writer.add_scalar("loss/Q2", q2_loss, updates)
+                            writer.add_scalar("loss/policy", policy_loss, updates)
                         updates += 1
 
 
@@ -104,7 +108,8 @@ def main():
                     break
 
             # print/write stats to tensorboard
-            writer.add_scalar("episode_return", episode_return, i_episode)
+            if args.tensorboard:
+                writer.add_scalar("episode_return", episode_return, i_episode)
             if args.verbose >= 1:
                 print("Episode: {}, "
                       "total steps: {}, "
