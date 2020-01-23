@@ -126,13 +126,13 @@ class Agent:
         if params_path is not None:
             print("Loading parameters from {}".format(params_path))
 
-            policy_path = ("/" + "policy_net_params")
+            policy_path = params_path + "/" + "policy_net_params"
             self.policy.load_state_dict(torch.load(policy_path))
 
-            q1_path = params_path + ("/" + "q1_net_params")
-            q2_path = params_path + ("/" + "q2_net_params")
+            q1_path = params_path + "/" + "q1_net_params"
+            q2_path = params_path + "/" + "q2_net_params"
             self.Q1.load_state_dict(torch.load(q1_path))
             self.Q2.load_state_dict(torch.load(q2_path))
 
-            policy_path += ("/" + "q1_net_params")
-            self.value.load_state_dict(torch.load(params_path))
+            value_path = params_path + "/" + "value_net_params"
+            self.value.load_state_dict(torch.load(value_path))
