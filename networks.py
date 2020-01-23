@@ -25,9 +25,9 @@ def initialize_parameters(layer):
 
 
 class ValueNetwork(nn.Module):
-    def __init__(self, state_dim, action_dim, hidden_units):
+    def __init__(self, state_dim, action_dim, hidden_units, device):
         super().__init__()
-
+        self.device = device
         self.linear1 = nn.Linear(state_dim, hidden_units)
         self.linear2 = nn.Linear(hidden_units, hidden_units)
         self.linear3 = nn.Linear(hidden_units, action_dim)
@@ -35,8 +35,7 @@ class ValueNetwork(nn.Module):
         self.apply(initialize_parameters)
 
     def forward(self, state):
-        x = state
-        h1 = F.relu(self.linear1(x))
+        h1 = F.relu(self.linear1(state))
         h2 = F.relu(self.linear2(h1))
         v = self.linear3(h2)
 
@@ -44,9 +43,10 @@ class ValueNetwork(nn.Module):
 
 
 class QNetwork(nn.Module):
-    def __init__(self, state_dim, action_dim, hidden_units):
+    def __init__(self, state_dim, action_dim, hidden_units, device):
         super().__init__()
 
+        self.device = device
         self.linear1 = nn.Linear(state_dim + action_dim, hidden_units)
         self.linear2 = nn.Linear(hidden_units, hidden_units)
         self.linear3 = nn.Linear(hidden_units, action_dim)
@@ -64,9 +64,10 @@ class QNetwork(nn.Module):
 
 
 class PolicyNetwork(nn.Module):
-    def __init__(self, state_dim, action_dim, hidden_units):
+    def __init__(self, state_dim, action_dim, hidden_units, device):
         super().__init__()
 
+        self.device = device
         self.linear1 = nn.Linear(state_dim, hidden_units)
         self.linear2 = nn.Linear(hidden_units, hidden_units)
 
@@ -76,8 +77,7 @@ class PolicyNetwork(nn.Module):
         self.apply(initialize_parameters)
 
     def forward(self, state):
-        x = state
-        h1 = F.relu(self.linear1(x))
+        h1 = F.relu(self.linear1(state))
         h2 = F.relu(self.linear2(h1))
         mean = self.mean_linear(h2)
         log_std = self.log_std_linear(h2)
@@ -87,15 +87,11 @@ class PolicyNetwork(nn.Module):
     def sample(self, state):
         mean, log_std = self.forward(state)
         std = log_std.exp()
-        normal = Normal(mean, std)
 
-        # for reparametrization trick (mean + std * N(0,1))
-        a_tilde = normal.rsample()
+        normal = Normal(0, 1)
+        noise = normal.sample().to(self.device)
+        a_tilde = mean + std*noise
         action = torch.tanh(a_tilde)
-        log_prob = normal.log_prob(a_tilde)
-
-        # enforcing action bounds
-        log_prob -= torch.log(1 - action.pow(2) + EPSILON)
-        log_prob = log_prob.sum(1, keepdim=True)
+        log_prob = Normal(mean, std).log_prob(a_tilde) - torch.log(1 - action.pow(2) + EPSILON).sum()
 
         return action, log_prob, mean, std

@@ -15,25 +15,28 @@ class Agent:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         # build policy network
-        self.policy = PolicyNetwork(num_inputs, action_space.shape[0], args.hidden_units).to(self.device)
-        self.policy_optim = Adam(self.policy.parameters(), lr=args.lr)
+        self.policy = PolicyNetwork(num_inputs, action_space.shape[0], args.hidden_units, self.device).to(self.device)
+        self.policy_optimizer = Adam(self.policy.parameters(), lr=args.lr)
 
         # build Q1 and Q2 networks
-        self.Q1 = QNetwork(num_inputs, action_space.shape[0], args.hidden_units).to(self.device)
-        self.Q2 = QNetwork(num_inputs, action_space.shape[0], args.hidden_units).to(self.device)
-        self.Q1_optim = Adam(self.Q1.parameters(), lr=args.lr)
-        self.Q2_optim = Adam(self.Q2.parameters(), lr=args.lr)
+        self.Q1 = QNetwork(num_inputs, action_space.shape[0], args.hidden_units, self.device).to(self.device)
+        self.Q2 = QNetwork(num_inputs, action_space.shape[0], args.hidden_units, self.device).to(self.device)
+        self.Q1_optimizer = Adam(self.Q1.parameters(), lr=args.lr)
+        self.Q1_criterion = nn.MSELoss()
+        self.Q2_optimizer = Adam(self.Q2.parameters(), lr=args.lr)
+        self.Q2_criterion = nn.MSELoss()
 
         # build value network (and target value network)
-        self.value = ValueNetwork(num_inputs, action_space.shape[0], args.hidden_units).to(self.device)
-        self.value_target = ValueNetwork(num_inputs, action_space.shape[0], args.hidden_units).to(self.device)
-        self.value_optim = Adam(self.value.parameters(), lr=args.lr)
+        self.value = ValueNetwork(num_inputs, action_space.shape[0], args.hidden_units, self.device).to(self.device)
+        self.value_target = ValueNetwork(num_inputs, action_space.shape[0], args.hidden_units, self.device).to(self.device)
+        self.value_optimizer = Adam(self.value.parameters(), lr=args.lr)
+        self.value_criterion = nn.MSELoss()
 
         # initialize target value net parameters equal to value net parameters
         hard_update(self.value_target, self.value)
 
 
-    def select_action(self, state):
+    def choose_action(self, state):
         state = torch.FloatTensor(state).to(self.device).unsqueeze(0)
         action, _, _, _ = self.policy.sample(state)
         action = action.detach().cpu().numpy()[0]
@@ -57,68 +60,47 @@ class Agent:
         reward_batch = torch.FloatTensor(reward_batch).to(self.device).unsqueeze(1)
         done_batch = torch.FloatTensor(done_batch).to(self.device).unsqueeze(1)
 
-        # Jq = E_{(s,a)~D}[ ( Q(s,a) - Q'(s,a) )^2 ]
-        # where Q'(s,a) = r + gamma * (1-d) * V_targ (s')
+        predicted_q1_value = self.Q1(state_batch, action_batch)
+        predicted_q2_value = self.Q2(state_batch, action_batch)
+        predicted_value = self.value(state_batch)
+        sampled_action_batch, log_prob_batch, _, _ = self.policy.sample(state_batch)
 
-        # compute Q' (based on value target params updated separately so no need to include computation graph)
-        with torch.no_grad():
-            V_targ = self.value_target(next_state_batch)
-            Q_hat = reward_batch + done_batch * (1 - self.gamma) * V_targ
+        # Training Q Function
+        next_target_value = self.value_target(next_state_batch)
+        q_target_value = reward_batch + (1 - done_batch) * self.gamma * next_target_value
+        q1_loss = self.Q1_criterion(predicted_q1_value, q_target_value.detach())
+        q2_loss =  self.Q2_criterion(predicted_q2_value, q_target_value.detach())
 
-        # compute Q functions on state action pairs from buffer
-        q1_D = self.Q1(state_batch, action_batch)
-        q2_D = self.Q2(state_batch, action_batch)
+        self.Q1_optimizer.zero_grad()
+        q1_loss.backward()
+        self.Q1_optimizer.step()
 
-        # compute both soft Q functions loss
-        Jq1 = F.mse_loss(q1_D, Q_hat)
-        Jq2 = F.mse_loss(q2_D, Q_hat)
+        self.Q2_optimizer.zero_grad()
+        q2_loss.backward()
+        self.Q2_optimizer.step()
 
-        # Jp = E_{(s~D), (a~pi)}[ ( log pi(a | s) - Q(s, a) )^2 ]
-        # with reparametrization trick to express it in terms of noise
-        # and also minimum of the two Q(s,a)
+        # Training Value Function
+        sampled_q_value = torch.min(self.Q1(state_batch, sampled_action_batch), self.Q2(state_batch, sampled_action_batch))
+        predicted_target_value = sampled_q_value - log_prob_batch
+        value_loss = self.value_criterion(predicted_value, predicted_target_value.detach())
 
-        # sample actions from policy and compute Q functions with these sampled actions
-        pi, log_pi, mean, log_std = self.policy.sample(state_batch)
-        q1_pi = self.Q1(state_batch, pi)
-        q2_pi = self.Q2(state_batch, pi)
-        min_q_pi = torch.min(q1_pi, q2_pi)
+        self.value_optimizer.zero_grad()
+        value_loss.backward()
+        self.value_optimizer.step()
 
-        Jp = ((self.alpha * log_pi) - min_q_pi).mean()
+        # Training Policy Function
+        policy_loss = (log_prob_batch - sampled_q_value).mean()
 
-        # Jv = E_{s~D}[( V(s) - E_{a~pi}[Q(s,a) - log pi(a|s)] )^2]
-        # using sampled actions
-        # and also minimum of the two Q(s,a)
-
-        vf = self.value(state_batch)
-        # again, since value target, no need to include computation graph for gradient
-        with torch.no_grad():
-            vf_target = min_q_pi - (self.alpha * log_pi)
-
-        Jv = F.mse_loss(vf, vf_target)
-
-        # update all parameters by one step SGD
-        self.value_optim.zero_grad()
-        Jv.backward()
-        self.value_optim.step()
-
-        self.Q1_optim.zero_grad()
-        Jq1.backward()
-        self.Q1_optim.step()
-
-        self.Q2_optim.zero_grad()
-        Jq2.backward()
-        self.Q2_optim.step()
-
-        self.policy_optim.zero_grad()
-        Jp.backward()
-        self.policy_optim.step()
+        self.policy_optimizer.zero_grad()
+        policy_loss.backward()
+        self.policy_optimizer.step()
 
         # update target value function
         if updates % self.target_update_interval == 0:
             soft_update(self.value_target, self.value, self.tau)
 
         # return losses for tracking
-        return Jv.item(), Jq1.item(), Jq2.item(), Jp.item()
+        return q1_loss.item(), q2_loss.item(), value_loss.item(), policy_loss.item()
 
 
     def save_networks_parameters(self, prefix=None):

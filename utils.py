@@ -22,6 +22,9 @@ def handle_parser():
     parser.add_argument("--minibatch_size", type=int, default=256, metavar="INT",
                         help="Minibatch size (default: 256)")
 
+    parser.add_argument("--exploratory_steps", type=int, default=10000, metavar="INT",
+                        help="Number of exploratory (i.e. with random actions) initial steps (default: 1e4)")
+
     parser.add_argument("--max_episode_steps", type=int, default=1000, metavar="INT",
                         help="Maximum number of timesteps for episode (default: 1e3)")
 
