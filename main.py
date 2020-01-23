@@ -67,8 +67,6 @@ def main():
                 if args.render:
                     env.render()
 
-                # decreasing the epsilon randomness at each step
-                epsilon *= args.epsilon
 
                 # sample action from epsilon random policy
                 if torch.rand(1)[0] <= epsilon:
@@ -121,6 +119,9 @@ def main():
                 if episode_steps > args.max_episode_steps:
                     break
 
+            # decreasing the epsilon randomness at each step
+            epsilon *= args.epsilon
+
             # print/write stats to tensorboard
             if args.tensorboard:
                 writer.add_scalar("episode_return", episode_return, i_episode)
@@ -128,12 +129,17 @@ def main():
                 print("Episode: {}, "
                       "total steps: {}, "
                       "episode steps: {}, "
-                      "episode return: {}".format(i_episode,
+                      "episode return: {},"
+                      "epsilon randomness: {}".format(i_episode,
                                                      total_steps,
                                                      episode_steps,
-                                                     round(episode_return, 2)))
+                                                     round(episode_return, 2),
+                                                      epsilon))
+
 
             if args.save_params_interval and i_episode % args.save_params_interval == 0:
+                if args.verbose >= 1:
+                    print("Saving parameters at {}" + prefix)
                 agent.save_networks_parameters(prefix)
 
             # if total number of steps has been exceeded
