@@ -63,6 +63,9 @@ def main():
             done = False
             state = env.reset()
 
+            # decreasing the epsilon randomness at each step
+            epsilon *= args.epsilon
+
             while not done:
                 if args.render:
                     env.render()
@@ -119,8 +122,6 @@ def main():
                 if episode_steps > args.max_episode_steps:
                     break
 
-            # decreasing the epsilon randomness at each step
-            epsilon *= args.epsilon
 
             # print/write stats to tensorboard
             if args.tensorboard:
@@ -129,11 +130,11 @@ def main():
                 print("Episode: {}, "
                       "total steps: {}, "
                       "episode steps: {}, "
-                      "episode return: {}, "
-                      "epsilon randomness: {}".format(i_episode,
+                      "episode return: {:.3f}, "
+                      "epsilon randomness: {:.3f}".format(i_episode,
                                                      total_steps,
                                                      episode_steps,
-                                                     round(episode_return, 2),
+                                                     episode_return,
                                                       epsilon))
 
 
