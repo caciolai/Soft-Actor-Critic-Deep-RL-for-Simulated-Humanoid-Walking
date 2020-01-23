@@ -55,6 +55,7 @@ def main():
     # training
     total_steps = 0
     updates = 0
+    epsilon = 1
     try:
         for i_episode in itertools.count(1):
             episode_return = 0
@@ -66,8 +67,14 @@ def main():
                 if args.render:
                     env.render()
 
-                # sample action from policy
-                action = agent.select_action(state)
+                # decreasing the epsilon randomness at each step
+                epsilon *= args.epsilon
+
+                # sample action from epsilon random policy
+                if torch.rand(1)[0] <= epsilon:
+                    action = env.action_space.sample()
+                else:
+                    action = agent.select_action(state)
 
                 # perform action and observe state and reward
                 next_state, reward, done, _ = env.step(action)
