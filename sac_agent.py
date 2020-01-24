@@ -43,7 +43,7 @@ class Agent:
 
     def choose_action(self, state):
         state = torch.from_numpy(state).float().unsqueeze(0).to(self.device)
-        action, _, _, _ = self.policy.sample(state)
+        action, _, = self.policy.sample(state)
         action = action.detach().cpu().numpy()[0]
         return self.rescale_action(action)
 
@@ -59,20 +59,20 @@ class Agent:
             batch_size=minibatch_size
         )
         # cast and move batches to GPU
-        state_batch = torch.from_numpy(state_batch).float().to(self.device)
-        next_state_batch = torch.from_numpy(next_state_batch).float().to(self.device)
-        action_batch = torch.from_numpy(action_batch).float().to(self.device)
-        reward_batch = torch.from_numpy(reward_batch).float().unsqueeze(1).to(self.device)
-        done_batch = torch.from_numpy(done_batch).float().unsqueeze(1).to(self.device)
+        state_batch = torch.from_numpy(state_batch).to(self.device, dtype=torch.float)
+        next_state_batch = torch.from_numpy(next_state_batch).to(self.device, dtype=torch.float)
+        action_batch = torch.from_numpy(action_batch).to(self.device, dtype=torch.float)
+        reward_batch = torch.from_numpy(reward_batch).unsqueeze(1).to(self.device, dtype=torch.float)
+        done_batch = torch.from_numpy(done_batch).unsqueeze(1).to(self.device, dtype=torch.float)
 
         predicted_q1_value = self.Q1(state_batch, action_batch)
         predicted_q2_value = self.Q2(state_batch, action_batch)
         predicted_value = self.value(state_batch)
-        sampled_action_batch, log_prob_batch, _, _ = self.policy.sample(state_batch)
+        sampled_action_batch, log_prob_batch = self.policy.sample(state_batch)
 
         # optimize Q function
         next_target_value = self.value_target(next_state_batch)
-        q_target_value = reward_batch + (1 - done_batch) * self.gamma * next_target_value
+        q_target_value = reward_batch * self.gamma * next_target_value
         q1_loss = self.Q1_criterion(predicted_q1_value, q_target_value.detach())
         q2_loss =  self.Q2_criterion(predicted_q2_value, q_target_value.detach())
 
@@ -101,13 +101,6 @@ class Agent:
         self.policy_optimizer.step()
 
         # optimize alpha
-        target_entropy = -torch.prod(torch.Tensor(self.action_space.shape).to(self.device)).item()
-        log_alpha = torch.zeros(1, requires_grad=True, device=self.device)
-
-        # Compute alpha loss.
-        alpha_loss = (log_alpha * (-log_prob_batch - target_entropy).detach()).mean()
-
-        # Update alpha
         alpha_loss = (self.log_alpha * (-log_prob_batch - self.target_entropy).detach()).mean()
 
         self.alpha_optimizer.zero_grad()

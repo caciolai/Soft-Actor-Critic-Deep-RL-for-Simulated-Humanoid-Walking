@@ -1,5 +1,7 @@
 import datetime
 import random
+
+import numpy as np
 from tensorboardX import SummaryWriter
 from replay_buffer import ReplayBuffer
 
@@ -27,13 +29,15 @@ def train(env, agent, args):
     episodes_return_list = []
     episodes_steps_list = []
 
-    # action_magnitudes = []
+
     try:
         while i_episode < args.max_steps:
             episode_return = 0
             episode_steps = 0
             done = False
             state = env.reset()
+
+            action_magnitudes = []
 
             while not done:
                 if args.render:
@@ -47,7 +51,7 @@ def train(env, agent, args):
                 else:
                     action = agent.choose_action(state)
 
-                # action_magnitudes.append(np.abs(action))
+                action_magnitudes.append(abs(action))
 
                 # perform action and observe next state and reward
                 next_state, reward, done, _ = env.step(action)
@@ -96,10 +100,10 @@ def train(env, agent, args):
 
             # print/write stats to tensorboard
             if args.tensorboard:
-                writer.add_scalar("episode_return", episode_return, i_episode)
-                writer.add_scalar("episode_steps", episode_steps, i_episode)
-                writer.add_scalar("epsilon_randomness", epsilon, i_episode)
-                # writer.add_scalar("mean action magnitude", np.array(action_magnitudes).mean(), i_episode)
+                writer.add_scalar("episode/return", episode_return, i_episode)
+                writer.add_scalar("episode/steps", episode_steps, i_episode)
+                writer.add_scalar("episode/epsilon_randomness", epsilon, i_episode)
+                writer.add_scalar("episode/mean action magnitude", np.array(action_magnitudes).mean(), i_episode)
 
             if args.verbose >= 1:
                 print("Episode: {}, "

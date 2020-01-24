@@ -76,9 +76,13 @@ class PolicyNetwork(nn.Module):
         mean, log_std = self.forward(state)
         std = log_std.exp()
 
-        normal = Normal(0, 1)
-        noise = normal.sample().to(self.device)
-        z = mean + std*noise
+        # reparametrization trick
+
+        # normal = Normal(0, 1)
+        # noise = normal.sample().to(self.device)
+        # z = mean + std*noise
+        z = Normal(mean, std).rsample()
+
         action = torch.tanh(z)
         log_prob = Normal(mean, std).log_prob(z) - torch.log(1 - action.pow(2) + EPSILON).sum(1, keepdim=True)
-        return action, log_prob, mean, std
+        return action, log_prob
