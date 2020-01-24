@@ -1,5 +1,5 @@
 import datetime
-import torch
+import random
 from tensorboardX import SummaryWriter
 from replay_buffer import ReplayBuffer
 
@@ -22,7 +22,8 @@ def train(env, agent, args):
     i_episode = 1
     total_steps = 0
     updates = 0
-    epsilon = args.epsilon_random
+    epsilon = args.initial_epsilon
+
     # action_magnitudes = []
     try:
         while i_episode < args.max_steps:
@@ -31,15 +32,12 @@ def train(env, agent, args):
             done = False
             state = env.reset()
 
-            # # decreasing the epsilon randomness at each step
-            #
-
             while not done:
                 if args.render:
                     env.render()
 
                 # # sample action from epsilon random policy
-                if epsilon is not None and torch.rand(1)[0] <= epsilon:
+                if epsilon is not None and random.uniform(0,1) <= epsilon:
                     action = env.action_space.sample()
                 elif args.exploratory_steps is not None and total_steps < args.exploratory_steps:
                     action = env.action_space.sample()
@@ -102,10 +100,12 @@ def train(env, agent, args):
                 print("Episode: {}, "
                       "total steps: {}, "
                       "episode steps: {}, "
-                      "episode return: {:.3f}".format(i_episode,
-                                                      total_steps,
-                                                      episode_steps,
-                                                      episode_return))
+                      "episode return: {:.3f}, "
+                      "epsilon randomness: {:.3f}".format(i_episode,
+                                                        total_steps,
+                                                        episode_steps,
+                                                        episode_return,
+                                                        epsilon))
 
             if args.save_params_interval and i_episode % args.save_params_interval == 0:
                 agent.save_networks_parameters(prefix)
@@ -115,8 +115,10 @@ def train(env, agent, args):
                 break
 
             i_episode += 1
+
+            # epsilon decay
             if epsilon is not None:
-                epsilon *= epsilon
+                epsilon *= args.epsilon_decay
 
     except KeyboardInterrupt:
         print("\nKeyboard interrupt received")

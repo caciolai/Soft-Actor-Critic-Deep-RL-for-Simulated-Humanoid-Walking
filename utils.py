@@ -1,6 +1,6 @@
 import argparse
 
-def handle_parser():
+def build_parser():
     parser = argparse.ArgumentParser(description="PyTorch SAC")
 
     parser.add_argument("--render", action="store_true",
@@ -37,8 +37,13 @@ def handle_parser():
     parser.add_argument("--minibatch_size", type=int, default=256, metavar="",
                         help="Minibatch size (default: 256)")
 
-    parser.add_argument("--epsilon_random", type=float, default=None, metavar="",
-                        help="Exponential factor of decrease of epsilon randomness (default: None)")
+    parser.add_argument("--initial_epsilon", type=float, default=None, metavar="",
+                        help="Initial value for random sampling probability (default: None) "
+                             "[must be set along with --epsilon_decrease]")
+
+    parser.add_argument("--epsilon_decay", type=float, default=None, metavar="",
+                        help="Value of exponential decay of epsilon (default: None) "
+                             "[must be set along with --initial_epsilon]")
 
     parser.add_argument("--max_steps", type=int, default=1000000, metavar="",
                         help="Maximum number of timesteps (default: 1e6)")

@@ -4,11 +4,11 @@ import torch
 from sac_agent import Agent
 from texttable import Texttable
 
-from utils import handle_parser
+from utils import build_parser
 from train import train
 
 def main():
-    parser = handle_parser()
+    parser = build_parser()
     args = parser.parse_args()
 
     # environment setup
