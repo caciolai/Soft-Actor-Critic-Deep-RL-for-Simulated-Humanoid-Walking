@@ -24,6 +24,9 @@ def train(env, agent, args):
     updates = 0
     epsilon = args.initial_epsilon
 
+    episodes_return_list = []
+    episodes_steps_list = []
+
     # action_magnitudes = []
     try:
         while i_episode < args.max_steps:
@@ -110,6 +113,9 @@ def train(env, agent, args):
             if args.save_params_interval and i_episode % args.save_params_interval == 0:
                 agent.save_networks_parameters(prefix)
 
+            episodes_return_list.append(episode_return)
+            episodes_steps_list.append(episode_steps)
+
             # if total number of steps has been exceeded
             if total_steps >= args.max_steps:
                 break
@@ -129,6 +135,9 @@ def train(env, agent, args):
         else:
             agent.save_networks_parameters()
         env.close()
+
+        return episodes_return_list, episodes_steps_list
+
 
 def rescale(value, old_min, old_max, new_min, new_max):
     # Figure out how 'wide' each range is

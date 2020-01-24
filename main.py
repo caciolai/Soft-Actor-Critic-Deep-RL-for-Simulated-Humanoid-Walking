@@ -6,6 +6,7 @@ from texttable import Texttable
 
 from utils import build_parser
 from train import train
+from plots import *
 
 def main():
     parser = build_parser()
@@ -37,7 +38,9 @@ def main():
         print("\nStarting training.")
 
     # training
-    train(env, agent, args)
+    returns, steps = train(env, agent, args)
+    plot_return(returns)
+    plot_steps(steps)
 
 
 if __name__ == "__main__":
