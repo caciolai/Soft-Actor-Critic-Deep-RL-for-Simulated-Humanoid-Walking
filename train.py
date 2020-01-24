@@ -97,6 +97,8 @@ def train(env, agent, args):
             # print/write stats to tensorboard
             if args.tensorboard:
                 writer.add_scalar("episode_return", episode_return, i_episode)
+                writer.add_scalar("episode_steps", episode_steps, i_episode)
+                writer.add_scalar("epsilon_randomness", epsilon, i_episode)
                 # writer.add_scalar("mean action magnitude", np.array(action_magnitudes).mean(), i_episode)
 
             if args.verbose >= 1:
@@ -122,9 +124,13 @@ def train(env, agent, args):
 
             i_episode += 1
 
-            # epsilon decay
-            if epsilon is not None:
-                epsilon *= args.epsilon_decay
+            # # epsilon decay
+            # if epsilon is not None:
+            #     epsilon *= args.epsilon_decay
+
+            # epsilon linear decrease
+            if epsilon > args.final_epsilon:
+                epsilon -= args.epsilon_decrease
 
     except KeyboardInterrupt:
         print("\nKeyboard interrupt received")

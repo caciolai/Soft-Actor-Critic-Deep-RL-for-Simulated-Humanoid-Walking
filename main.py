@@ -1,5 +1,4 @@
 import gym
-import numpy as np
 import torch
 from sac_agent import Agent
 from texttable import Texttable
@@ -39,8 +38,9 @@ def main():
 
     # training
     returns, steps = train(env, agent, args)
-    plot_return(returns)
-    plot_steps(steps)
+    if args.plot:
+        plot_return(returns)
+        plot_steps(steps)
 
 
 if __name__ == "__main__":

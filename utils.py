@@ -38,12 +38,23 @@ def build_parser():
                         help="Minibatch size (default: 256)")
 
     parser.add_argument("--initial_epsilon", type=float, default=None, metavar="",
-                        help="Initial value for random sampling probability (default: None) "
+                        help="Initial value of epsilon, which is the probability of"
+                             "random sampling environment actions (default: None) "
                              "[must be set along with --epsilon_decrease]")
 
-    parser.add_argument("--epsilon_decay", type=float, default=None, metavar="",
-                        help="Value of exponential decay of epsilon (default: None) "
+    parser.add_argument("--epsilon_decrease", type=float, default=None, metavar="",
+                        help="Linear decrease of epsilon (default: None)"
                              "[must be set along with --initial_epsilon]")
+
+    parser.add_argument("--final_epsilon", type=float, default=None, metavar="",
+                        help="Final value of epsilon (default: None) "
+                             "[must be set along with --epsilon_decrease]")
+
+    # parser.add_argument("--epsilon_decay", type=float, default=None, metavar="",
+    #                     help="Value of exponential decay of epsilon (default: None) "
+    #                          "[must be set along with --initial_epsilon]")
+
+
 
     parser.add_argument("--max_steps", type=int, default=1000000, metavar="",
                         help="Maximum number of timesteps (default: 1e6)")
@@ -69,6 +80,9 @@ def build_parser():
 
     parser.add_argument("--custom_reward", action="store_true",
                         help="Replace gym reward with custom distance-based reward")
+
+    parser.add_argument("--plot", action="store_true",
+                        help="Plot summary of training at the end of execution (default: False)")
 
     return parser
 
