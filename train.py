@@ -22,7 +22,7 @@ def train(env, agent, args):
     i_episode = 1
     total_steps = 0
     updates = 0
-    epsilon = args.epsilon
+    epsilon = args.epsilon_random
     # action_magnitudes = []
     try:
         while i_episode < args.max_steps:
@@ -39,9 +39,9 @@ def train(env, agent, args):
                     env.render()
 
                 # # sample action from epsilon random policy
-                if torch.rand(1)[0] <= epsilon:
+                if epsilon is not None and torch.rand(1)[0] <= epsilon:
                     action = env.action_space.sample()
-                elif total_steps < args.exploratory_steps:
+                elif args.exploratory_steps is not None and total_steps < args.exploratory_steps:
                     action = env.action_space.sample()
                 else:
                     action = agent.choose_action(state)
@@ -51,14 +51,14 @@ def train(env, agent, args):
                 # perform action and observe next state and reward
                 next_state, reward, done, _ = env.step(action)
 
+                if args.custom_reward:
+                    reward = custom_reward(next_state, reward)
+
                 if args.verbose >= 2:
                     print(next_state, reward, done)
 
-                # ignore done signal if not actually dependent on state
-                mask = False if episode_steps == env._max_episode_steps else done
-
                 # Append transition to replay buffer
-                replay_buffer.append(state, action, reward, next_state, float(mask))
+                replay_buffer.append(state, action, reward, next_state, float(done))
                 state = next_state
 
                 # if replay buffer is sufficiently large to contain at least a minibatch
@@ -115,7 +115,8 @@ def train(env, agent, args):
                 break
 
             i_episode += 1
-            epsilon *= args.epsilon
+            if epsilon is not None:
+                epsilon *= epsilon
 
     except KeyboardInterrupt:
         print("\nKeyboard interrupt received")
@@ -126,3 +127,22 @@ def train(env, agent, args):
         else:
             agent.save_networks_parameters()
         env.close()
+
+def rescale(value, old_min, old_max, new_min, new_max):
+    # Figure out how 'wide' each range is
+    old_range = old_max - old_min
+    new_range = new_max - new_min
+
+    # Convert the left range into a 0-1 range (float)
+    normalized_value = float(value - old_min) / float(old_range)
+
+    # Convert the 0-1 range into a value in the right range.
+    return new_min + (normalized_value * new_range)
+
+def custom_reward(state, reward, max_custom_reward=1):
+    distance = 0.6 - state[0]
+
+    distance = rescale(distance, 0, 1.6, 0, 1)
+    custom_term = max_custom_reward * ((1-distance)**2)
+
+    return reward + custom_term
