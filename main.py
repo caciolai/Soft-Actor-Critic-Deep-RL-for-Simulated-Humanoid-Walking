@@ -45,11 +45,11 @@ def main():
     try:
         train(env, agent, args)
     except KeyboardInterrupt:
-        print("Interrupt received.")
+        print("\nInterrupt received.")
     except Exception:
         traceback.print_exc()
     finally:
-        print("Training terminated.")
+        print("\nTraining terminated.")
 
     if args.testing:
         input("\nPress ENTER to initiate testing.")
@@ -57,11 +57,11 @@ def main():
         try:
             test(env, agent, args.testing_steps)
         except KeyboardInterrupt:
-            print("Interrupt received.")
+            print("\nInterrupt received.")
         except Exception:
             traceback.print_exc()
         finally:
-            print("Testing terminated.")
+            print("\nTesting terminated.")
 
 
 if __name__ == "__main__":

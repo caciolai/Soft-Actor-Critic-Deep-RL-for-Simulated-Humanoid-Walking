@@ -73,14 +73,17 @@ class PolicyNetwork(nn.Module):
 
         return mean, log_std
 
-    def evaluate(self, state, epsilon=1e-6):
+    def sample(self, state):
         mean, log_std = self.forward(state)
         std = log_std.exp()
 
         normal = Normal(0, 1)
         z = normal.sample()
         action = torch.tanh(mean + std * z.to(self.device))
-        log_prob = Normal(mean, std).log_prob(mean + std * z.to(self.device)) - torch.log(1 - action.pow(2) + epsilon)
+        log_prob = Normal(mean, std).log_prob(
+            mean + std * z.to(self.device)
+        ) - torch.log(1 - action.pow(2) + EPS)
+
         return action, log_prob, z, mean, log_std
 
     def get_action(self, state):
