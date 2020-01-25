@@ -15,6 +15,7 @@ class SAC:
         self.hidden_dim = args.hidden_units
         self.tau = args.tau
         self.lr = args.lr
+        self.target_update_interval = args.target_update_interval
 
         self.value_net = ValueNetwork(self.state_dim, self.hidden_dim).to(self.device)
         self.target_value_net = ValueNetwork(self.state_dim, self.hidden_dim).to(self.device)
@@ -33,7 +34,7 @@ class SAC:
         self.policy_optimizer = optim.Adam(self.policy_net.parameters(), lr=self.lr)
 
 
-    def update(self, replay_buffer, batch_size):
+    def update(self, replay_buffer, batch_size, updates):
         state, action, reward, next_state, done = replay_buffer.sample(batch_size)
 
         state = torch.FloatTensor(state).to(self.device)
@@ -80,7 +81,12 @@ class SAC:
         self.policy_optimizer.step()
 
         # Update Target Value
-        soft_update(self.value_net, self.target_value_net, self.tau)
+        if updates % self.target_update_interval == 0:
+            soft_update(self.value_net, self.target_value_net, self.tau)
+
+    def choose_action(self, state):
+        action = self.policy_net.get_action(state)
+        return action.detach().numpy()
 
     def save_networks_parameters(self, prefix=None):
         if not prefix:

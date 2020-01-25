@@ -1,9 +1,10 @@
 import gym
 import numpy as np
 import torch
-from sac import SAC
 from texttable import Texttable
+import traceback
 
+from sac import SAC
 from utils import *
 from train import *
 
@@ -41,10 +42,26 @@ def main():
         print("\nStarting training.")
 
     # training
-    train(env, agent, args)
+    try:
+        train(env, agent, args)
+    except KeyboardInterrupt:
+        print("Interrupt received.")
+    except Exception:
+        traceback.print_exc()
+    finally:
+        print("Training terminated.")
 
-    # testing
-    test(env, agent, int(1e4))
+    if args.testing:
+        input("\nPress ENTER to initiate testing.")
+        # testing
+        try:
+            test(env, agent, args.testing_steps)
+        except KeyboardInterrupt:
+            print("Interrupt received.")
+        except Exception:
+            traceback.print_exc()
+        finally:
+            print("Testing terminated.")
 
 
 if __name__ == "__main__":

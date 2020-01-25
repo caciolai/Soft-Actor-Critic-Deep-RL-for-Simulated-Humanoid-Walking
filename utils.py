@@ -17,10 +17,6 @@ def build_parser():
     parser.add_argument("--verbose", type=int, default=1, metavar="",
                         help="Verbose level [1..3] (default: 1)")
 
-    parser.add_argument("--alpha", type=float, default=0.2, metavar="",
-                        help="Temperature parameter α determines the relative importance of "
-                             "the entropy term against the reward (default: 0.2)")
-
     parser.add_argument("--gamma", type=float, default=0.99, metavar="",
                         help="Discount factor for reward (default: 0.99)")
 
@@ -59,11 +55,12 @@ def build_parser():
                         help="Final value of epsilon (default: None) "
                              "[must be set along with --epsilon_decrease]")
 
-    parser.add_argument("--max_steps", type=int, default=1000000, metavar="",
-                        help="Maximum number of timesteps (default: 1e6)")
+    parser.add_argument("--max_steps", type=int, default=None, metavar="",
+                        help="Maximum number of timesteps (default: None)")
 
-    parser.add_argument("--max_episode_steps", type=int, default=1000, metavar="",
-                        help="Maximum number of timesteps per episode (default: 1000)")
+    parser.add_argument("--max_episode_steps", type=int, default=None, metavar="",
+                        help="Maximum number of timesteps per episode (default: None "
+                             "[Environment dependent])")
 
     parser.add_argument("--exploratory_steps", type=int, default=None, metavar="",
                         help="Number of exploratory (i.e. with random actions) "
@@ -79,7 +76,13 @@ def build_parser():
                         help="If set, interval of episodes to save net params (default: None)")
 
     parser.add_argument("--load_params", type=str, default=None, metavar="",
-                        help="Dir of the three NNs parameters (default: None)")
+                        help="Directory with the neural network parameters to be loaded (default: None)")
+
+    parser.add_argument("--testing", action="store_true",
+                        help="Make a test after training")
+
+    parser.add_argument("--testing_steps", type=int, default=1000, metavar="",
+                        help="Number of testing steps (default 1000) [need --testing]")
 
     return parser
 
