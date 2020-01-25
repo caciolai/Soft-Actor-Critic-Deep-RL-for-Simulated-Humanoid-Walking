@@ -3,86 +3,105 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Normal
 
-MAX_LOG_STD = 20
+MAX_LOG_STD = 2
 MIN_LOG_STD = -20
-EPSILON = 1e-6
-
-# update target network parameters with soft update (exponentially moving average)
-def soft_update(target, source, tau):
-    for target_param, param in zip(target.parameters(), source.parameters()):
-        target_param.data.copy_(tau * target_param.data + (1.0 - tau) * target_param)
-
-# update target network parameters with hard update (just copy)
-def hard_update(target, source):
-    for target_param, param in zip(target.parameters(), source.parameters()):
-        target_param.data.copy_(param.data)
+EPS = 1e-6
+INIT_WEIGHT = 3E-3
 
 
 class ValueNetwork(nn.Module):
-    def __init__(self, state_dim, action_dim, hidden_units, device):
-        super().__init__()
-        self.device = device
-        self.linear1 = nn.Linear(state_dim, hidden_units)
-        self.linear2 = nn.Linear(hidden_units, hidden_units)
-        self.linear3 = nn.Linear(hidden_units, action_dim)
+    def __init__(self, state_dim, hidden_dim):
+        super(ValueNetwork, self).__init__()
+
+        self.linear1 = nn.Linear(state_dim, hidden_dim)
+        self.linear2 = nn.Linear(hidden_dim, hidden_dim)
+        self.linear3 = nn.Linear(hidden_dim, 1)
+
+        self.linear3.weight.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
+        self.linear3.bias.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
 
     def forward(self, state):
-        h1 = F.relu(self.linear1(state))
-        h2 = F.relu(self.linear2(h1))
-        v = self.linear3(h2)
+        x = F.relu(self.linear1(state))
+        x = F.relu(self.linear2(x))
+        x = self.linear3(x)
+        return x
 
-        return v
 
+class SoftQNetwork(nn.Module):
+    def __init__(self, num_inputs, num_actions, hidden_size):
+        super(SoftQNetwork, self).__init__()
 
-class QNetwork(nn.Module):
-    def __init__(self, state_dim, action_dim, hidden_units, device):
-        super().__init__()
+        self.linear1 = nn.Linear(num_inputs + num_actions, hidden_size)
+        self.linear2 = nn.Linear(hidden_size, hidden_size)
+        self.linear3 = nn.Linear(hidden_size, 1)
 
-        self.device = device
-        self.linear1 = nn.Linear(state_dim + action_dim, hidden_units)
-        self.linear2 = nn.Linear(hidden_units, hidden_units)
-        self.linear3 = nn.Linear(hidden_units, action_dim)
+        self.linear3.weight.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
+        self.linear3.bias.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
 
     def forward(self, state, action):
         x = torch.cat([state, action], 1)
-
-        h1 = F.relu(self.linear1(x))
-        h2 = F.relu(self.linear2(h1))
-        q = self.linear3(h2)
-
-        return q
+        x = F.relu(self.linear1(x))
+        x = F.relu(self.linear2(x))
+        x = self.linear3(x)
+        return x
 
 
 class PolicyNetwork(nn.Module):
-    def __init__(self, state_dim, action_dim, hidden_units, device):
-        super().__init__()
+    def __init__(self, num_inputs, num_actions, hidden_size, device):
+        super(PolicyNetwork, self).__init__()
 
         self.device = device
-        self.linear1 = nn.Linear(state_dim, hidden_units)
-        self.linear2 = nn.Linear(hidden_units, hidden_units)
 
-        self.mean_linear = nn.Linear(hidden_units, action_dim)
-        self.log_std_linear = nn.Linear(hidden_units, action_dim)
+        self.linear1 = nn.Linear(num_inputs, hidden_size)
+        self.linear2 = nn.Linear(hidden_size, hidden_size)
+
+        self.mean_linear = nn.Linear(hidden_size, num_actions)
+        self.mean_linear.weight.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
+        self.mean_linear.bias.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
+
+        self.log_std_linear = nn.Linear(hidden_size, num_actions)
+        self.log_std_linear.weight.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
+        self.log_std_linear.bias.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
 
     def forward(self, state):
-        h1 = F.relu(self.linear1(state))
-        h2 = F.relu(self.linear2(h1))
-        mean = self.mean_linear(h2)
-        log_std = self.log_std_linear(h2)
-        log_std = torch.clamp(log_std, min=MIN_LOG_STD, max=MAX_LOG_STD)
+        x = F.relu(self.linear1(state))
+        x = F.relu(self.linear2(x))
+
+        mean = self.mean_linear(x)
+        log_std = self.log_std_linear(x)
+        log_std = torch.clamp(log_std, MIN_LOG_STD, MAX_LOG_STD)
+
         return mean, log_std
 
-    def sample(self, state):
+    def evaluate(self, state, epsilon=1e-6):
         mean, log_std = self.forward(state)
         std = log_std.exp()
 
-        # reparametrization trick
+        normal = Normal(0, 1)
+        z = normal.sample()
+        action = torch.tanh(mean + std * z.to(self.device))
+        log_prob = Normal(mean, std).log_prob(mean + std * z.to(self.device)) - torch.log(1 - action.pow(2) + epsilon)
+        return action, log_prob, z, mean, log_std
 
-        # normal = Normal(0, 1)
-        # noise = normal.sample().to(self.device)
-        # z = mean + std*noise
-        z = Normal(mean, std).rsample()
+    def get_action(self, state):
+        state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
+        mean, log_std = self.forward(state)
+        std = log_std.exp()
 
-        action = torch.tanh(z)
-        log_prob = Normal(mean, std).log_prob(z) - torch.log(1 - action.pow(2) + EPSILON).sum(1, keepdim=True)
-        return action, log_prob
+        normal = Normal(0, 1)
+        z = normal.sample().to(self.device)
+        action = torch.tanh(mean + std * z)
+
+        action = action.cpu()  # .detach().cpu().numpy()
+        return action[0]
+
+
+def hard_update(source_net, target_net):
+    for target_param, param in zip(target_net.parameters(), source_net.parameters()):
+        target_param.data.copy_(param.data)
+
+def soft_update(source_net, target_net, tau):
+    for target_param, param in zip(target_net.parameters(), source_net.parameters()):
+        target_param.data.copy_(
+            target_param.data * (1.0 - tau) + param.data * tau
+        )

@@ -1,5 +1,10 @@
 import argparse
 
+import gym
+import numpy as np
+from IPython.core.display import clear_output
+import matplotlib.pyplot as plt
+
 def build_parser():
     parser = argparse.ArgumentParser(description="PyTorch SAC")
 
@@ -34,13 +39,17 @@ def build_parser():
     parser.add_argument("--seed", type=int, default=0, metavar="",
                         help="Random seed (default: 0)")
 
-    parser.add_argument("--minibatch_size", type=int, default=256, metavar="",
-                        help="Minibatch size (default: 256)")
+    parser.add_argument("--batch_size", type=int, default=256, metavar="",
+                        help="Batch size (default: 256)")
 
     parser.add_argument("--initial_epsilon", type=float, default=None, metavar="",
                         help="Initial value of epsilon, which is the probability of"
                              "random sampling environment actions (default: None) "
                              "[must be set along with --epsilon_decrease]")
+
+    parser.add_argument("--epsilon_decay", type=float, default=None, metavar="",
+                        help="Exponential decay of epsilon (default: None)"
+                             "[must be set along with --initial_epsilon]")
 
     parser.add_argument("--epsilon_decrease", type=float, default=None, metavar="",
                         help="Linear decrease of epsilon (default: None)"
@@ -49,12 +58,6 @@ def build_parser():
     parser.add_argument("--final_epsilon", type=float, default=None, metavar="",
                         help="Final value of epsilon (default: None) "
                              "[must be set along with --epsilon_decrease]")
-
-    # parser.add_argument("--epsilon_decay", type=float, default=None, metavar="",
-    #                     help="Value of exponential decay of epsilon (default: None) "
-    #                          "[must be set along with --initial_epsilon]")
-
-
 
     parser.add_argument("--max_steps", type=int, default=1000000, metavar="",
                         help="Maximum number of timesteps (default: 1e6)")
@@ -78,12 +81,32 @@ def build_parser():
     parser.add_argument("--load_params", type=str, default=None, metavar="",
                         help="Dir of the three NNs parameters (default: None)")
 
-    parser.add_argument("--custom_reward", action="store_true",
-                        help="Replace gym reward with custom distance-based reward")
-
-    parser.add_argument("--plot", action="store_true",
-                        help="Plot summary of training at the end of execution (default: False)")
-
     return parser
 
 
+class NormalizedActions(gym.ActionWrapper):
+    def action(self, action):
+        low = self.action_space.low
+        high = self.action_space.high
+
+        action = low + (action + 1.0) * 0.5 * (high - low)
+        action = np.clip(action, low, high)
+
+        return action
+
+    def reverse_action(self, action):
+        low = self.action_space.low
+        high = self.action_space.high
+
+        action = 2 * (action - low) / (high - low) - 1
+        action = np.clip(action, low, high)
+
+        return action
+
+def plot(i_episode, rewards):
+    clear_output(True)
+    plt.figure(figsize=(20,5))
+    plt.subplot(131)
+    plt.title('Episode %s. Reward: %s' % (i_episode, rewards[-1]))
+    plt.plot(rewards)
+    plt.show()
