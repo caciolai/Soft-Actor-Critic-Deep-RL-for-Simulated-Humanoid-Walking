@@ -44,7 +44,7 @@ def main():
     train(env, agent, args)
 
     # testing
-    test(env, agent, 1e4)
+    test(env, agent, int(1e4))
 
 
 if __name__ == "__main__":
