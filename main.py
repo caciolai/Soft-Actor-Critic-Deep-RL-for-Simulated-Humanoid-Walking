@@ -3,17 +3,20 @@ import numpy as np
 import torch
 from texttable import Texttable
 import traceback
+import warnings
 
 from sac import SAC
 from utils import *
 from train import *
 
 def main():
+    warnings.filterwarnings("ignore", category=UserWarning)
     parser = build_parser()
     args = parser.parse_args()
 
     # environment setup
     env = FeaturizedStates(NormalizedActions(gym.make("Pendulum-v0")))
+    # env = NormalizedActions(gym.make("Pendulum-v0"))
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
     env.seed(args.seed)

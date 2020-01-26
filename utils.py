@@ -97,14 +97,29 @@ def build_parser():
 
     return parser
 
-def plot_data(data, title, x_label, y_label):
+
+def smooth(scalars, weight):
+    last = scalars[0]  # First value in the plot (first timestep)
+    smoothed = list()
+    for point in scalars:
+        smoothed_val = last * weight + (1 - weight) * point  # Calculate smoothed value
+        smoothed.append(smoothed_val)                        # Save it
+        last = smoothed_val                                  # Anchor the last smoothed value
+
+    return smoothed
+
+def plot_data(data, title, x_label, y_label, smoothness=0.6):
     plt.clf()
-    plt.plot(np.arange(1, len(data)+1), data)
+    smoothed_data = smooth(data, smoothness)
+    plt.plot(np.arange(1, len(data)+1), smoothed_data)
     plt.title(title)
     plt.xlabel(x_label)
     plt.ylabel(y_label)
     plt.grid(True)
-    plt.show()
+    plt.ion()
+    plt.draw()
+    plt.pause(0.01)
+    plt.clf()
 
 def plot_episodes_reward(episodes_reward_list):
     title = "Reward per episode"
