@@ -145,7 +145,7 @@ class NormalizedActions(gym.ActionWrapper):
 
 
 class FeaturizedStates(gym.ObservationWrapper):
-    def __init__(self, env):
+    def __init__(self, env, n_components=100):
         super().__init__(env)
         # Feature Preprocessing: Normalize to zero mean and unit variance
         # We use a few samples from the observation space to do this
@@ -155,16 +155,20 @@ class FeaturizedStates(gym.ObservationWrapper):
 
         # Used to convert a state to a featurizes represenation.
         # We use RBF kernels with different variances to cover different parts of the space
-        self.featurizer = sklearn.pipeline.FeatureUnion([
-            ("rbf1", RBFSampler(gamma=5.0, n_components=100)),
-            ("rbf2", RBFSampler(gamma=2.0, n_components=100)),
-            ("rbf3", RBFSampler(gamma=1.0, n_components=100)),
-            ("rbf4", RBFSampler(gamma=0.5, n_components=100))
-        ])
+        obs_dim = env.observation_space.shape[0]
+        features = []
+        variances = np.geomspace(0.1, 10, num=obs_dim)
+        for i in range(1, obs_dim+1):
+            features.append(
+                ("rbf{}".format(i), RBFSampler(gamma=variances[i-1], n_components=n_components))
+            )
+
+        self.featurizer = sklearn.pipeline.FeatureUnion(features)
         self.featurizer.fit(self.scaler.transform(observation_examples))
 
-        self.observation_space = spaces.Box(low=np.array([-1.0 for _ in range(400)]),
-                                            high=np.array([+1.0 for _ in range(400)]),
+        new_obs_dim = obs_dim * n_components
+        self.observation_space = spaces.Box(low=np.array([-1.0 for _ in range(new_obs_dim)]),
+                                            high=np.array([1.0 for _ in range(new_obs_dim)]),
                                             dtype=np.float32)
 
     def observation(self, observation):
