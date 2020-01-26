@@ -38,8 +38,11 @@ class SAC:
         self.policy_optimizer = optim.Adam(self.policy_net.parameters(), lr=self.lr)
 
         # for optimizing alpha
-        self.target_entropy = -1. * args.target_alpha_scale * \
-                              torch.tensor(action_space.shape).to(self.device).item()
+        if args.target_alpha is not None:
+            self.target_entropy = args.target_alpha
+        else:
+            self.target_entropy = -1. * torch.tensor(action_space.shape).to(self.device).item()
+
         self.log_alpha = torch.zeros(1, requires_grad=True, device=self.device)
         self.alpha = self.log_alpha.exp()
         self.alpha_optimizer = optim.Adam([self.log_alpha], lr=self.lr)

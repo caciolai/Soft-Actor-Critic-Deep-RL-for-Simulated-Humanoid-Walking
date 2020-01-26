@@ -3,12 +3,13 @@ import itertools
 import numpy as np
 
 from replay_buffer import ReplayBuffer
+from utils import plot_episodes_reward
 
 
 def train(env, agent, args):
 
     if args.max_episode_steps is not None:
-        env._max_episode_steps = args.max_episode_steps
+        env.set_max_episode_steps(args.max_episode_steps)
 
     # saved agents dir
     if args.save_params_interval:
@@ -58,6 +59,9 @@ def train(env, agent, args):
         print("Episode: {}. Steps: {}. Episode steps: {}. Episode return: {}".format(
             i_episode, total_steps, i_step, episode_return
         ))
+
+        if args.plot:
+            plot_episodes_reward(returns)
 
         if args.max_steps is not None and total_steps > args.max_steps:
             break

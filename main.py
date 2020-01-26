@@ -13,7 +13,7 @@ def main():
     args = parser.parse_args()
 
     # environment setup
-    env = gym.make("MountainCarContinuous-v0")
+    env = FeaturizedStates(NormalizedActions(gym.make("Pendulum-v0")))
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
     env.seed(args.seed)
@@ -30,7 +30,7 @@ def main():
         t.add_rows([["Argument", "Value"]] + [[arg, getattr(args, arg)] for arg in vars(args)])
         print(t.draw())
 
-        print("\nEpisode time horizon: {} steps.".format(env._max_episode_steps))
+        print("\nEpisode time horizon: {} steps.".format(env.get_max_episode_steps()))
         print("\nObservation space shape: {}".format(env.observation_space.shape))
         print("Observation space range: [{}, {}]".format(
             env.observation_space.low, env.observation_space.high)
@@ -49,11 +49,13 @@ def main():
         traceback.print_exc()
     finally:
         print("\nTraining terminated.")
+        env.close()
 
     if args.testing:
         input("\nPress ENTER to initiate testing.")
         # testing
         try:
+            env = FeaturizedStates(NormalizedActions(gym.make("Pendulum-v0")))
             test(env, agent, args.testing_steps)
         except KeyboardInterrupt:
             print("\nInterrupt received.")
@@ -61,6 +63,7 @@ def main():
             traceback.print_exc()
         finally:
             print("\nTesting terminated.")
+            env.close()
 
 
 if __name__ == "__main__":

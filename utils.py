@@ -1,8 +1,10 @@
 import argparse
 
 import gym
+from gym import spaces
 import numpy as np
-from IPython.core.display import clear_output
+import sklearn, sklearn.pipeline
+from sklearn.kernel_approximation import RBFSampler
 import matplotlib.pyplot as plt
 
 def build_parser():
@@ -17,9 +19,8 @@ def build_parser():
     parser.add_argument("--verbose", type=int, default=1, metavar="",
                         help="Verbose level [1..3] (default: 1)")
 
-    parser.add_argument("--target_alpha_scale", type=float, default=1, metavar="",
-                        help="Scale of desired target alpha wrt to recommended one from "
-                             "the Harnojaa paper (-dim(A)) (default: 1)")
+    parser.add_argument("--target_alpha", type=float, default=None, metavar="",
+                        help="Target alpha (default: None -> dim(A))")
 
     parser.add_argument("--gamma", type=float, default=0.99, metavar="",
                         help="Discount factor for reward (default: 0.99)")
@@ -91,15 +92,38 @@ def build_parser():
     parser.add_argument("--testing_steps", type=int, default=1000, metavar="",
                         help="Number of testing steps (default 1000) [need --testing]")
 
+    parser.add_argument("--plot", action="store_true",
+                        help="Plot reward curve each episode (default: False)")
+
     return parser
 
+def plot_data(data, title, x_label, y_label):
+    plt.clf()
+    plt.plot(np.arange(1, len(data)+1), data)
+    plt.title(title)
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    plt.grid(True)
+    plt.show()
 
+def plot_episodes_reward(episodes_reward_list):
+    title = "Reward per episode"
+    x_label = "Episode"
+    y_label = "Reward"
+    plot_data(episodes_reward_list, title, x_label, y_label)
+
+
+
+# action in [-1, 1] to action in [low, high]
 class NormalizedActions(gym.ActionWrapper):
+    def __init__(self, env):
+        super().__init__(env)
+
     def action(self, action):
         low = self.action_space.low
         high = self.action_space.high
 
-        action = low + (action + 1.0) * 0.5 * (high - low)
+        action = ((high + low) + action*(high - low)) / 2.0
         action = np.clip(action, low, high)
 
         return action
@@ -108,15 +132,44 @@ class NormalizedActions(gym.ActionWrapper):
         low = self.action_space.low
         high = self.action_space.high
 
-        action = 2 * (action - low) / (high - low) - 1
-        action = np.clip(action, low, high)
+        action = (2.0 * action - (high + low)) / (high - low)
+        action = np.clip(action, -1, 1)
 
         return action
 
-def plot(i_episode, rewards):
-    clear_output(True)
-    plt.figure(figsize=(20,5))
-    plt.subplot(131)
-    plt.title('Episode %s. Reward: %s' % (i_episode, rewards[-1]))
-    plt.plot(rewards)
-    plt.show()
+    def get_max_episode_steps(self):
+        return self.env._max_episode_steps
+
+    def set_max_episode_steps(self, num):
+        self.env._max_episode_steps = num
+
+
+class FeaturizedStates(gym.ObservationWrapper):
+    def __init__(self, env):
+        super().__init__(env)
+        # Feature Preprocessing: Normalize to zero mean and unit variance
+        # We use a few samples from the observation space to do this
+        observation_examples = np.array([env.observation_space.sample() for _ in range(10000)])
+        self.scaler = sklearn.preprocessing.StandardScaler()
+        self.scaler.fit(observation_examples)
+
+        # Used to convert a state to a featurizes represenation.
+        # We use RBF kernels with different variances to cover different parts of the space
+        self.featurizer = sklearn.pipeline.FeatureUnion([
+            ("rbf1", RBFSampler(gamma=5.0, n_components=100)),
+            ("rbf2", RBFSampler(gamma=2.0, n_components=100)),
+            ("rbf3", RBFSampler(gamma=1.0, n_components=100)),
+            ("rbf4", RBFSampler(gamma=0.5, n_components=100))
+        ])
+        self.featurizer.fit(self.scaler.transform(observation_examples))
+
+        self.observation_space = spaces.Box(low=np.array([-1.0 for _ in range(400)]),
+                                            high=np.array([+1.0 for _ in range(400)]),
+                                            dtype=np.float32)
+
+    def observation(self, observation):
+        scaled = self.scaler.transform([observation])
+        featurized = self.featurizer.transform(scaled)
+        return featurized[0]
+
+
