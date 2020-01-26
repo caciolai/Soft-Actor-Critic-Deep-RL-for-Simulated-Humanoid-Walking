@@ -6,12 +6,12 @@ from torch.distributions import Normal
 MAX_LOG_STD = 2
 MIN_LOG_STD = -20
 EPS = 1e-6
-INIT_WEIGHT = 3E-3
+INIT_WEIGHT = 1E-2
 
 
 class ValueNetwork(nn.Module):
     def __init__(self, state_dim, hidden_dim):
-        super(ValueNetwork, self).__init__()
+        super().__init__()
 
         self.linear1 = nn.Linear(state_dim, hidden_dim)
         self.linear2 = nn.Linear(hidden_dim, hidden_dim)
@@ -33,7 +33,7 @@ class ValueNetwork(nn.Module):
 
 class SoftQNetwork(nn.Module):
     def __init__(self, num_inputs, num_actions, hidden_size):
-        super(SoftQNetwork, self).__init__()
+        super().__init__()
 
         self.linear1 = nn.Linear(num_inputs + num_actions, hidden_size)
         self.linear2 = nn.Linear(hidden_size, hidden_size)
@@ -41,11 +41,11 @@ class SoftQNetwork(nn.Module):
 
 
         self.linear1.weight.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
-        self.linear1.bias.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
+        self.linear1.bias.data.uniform_(0, INIT_WEIGHT)
         self.linear2.weight.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
-        self.linear2.bias.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
+        self.linear2.bias.data.uniform_(0, INIT_WEIGHT)
         self.linear3.weight.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
-        self.linear3.bias.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
+        self.linear3.bias.data.uniform_(0, INIT_WEIGHT)
 
     def forward(self, state, action):
         x = torch.cat([state, action], 1)
@@ -57,7 +57,7 @@ class SoftQNetwork(nn.Module):
 
 class PolicyNetwork(nn.Module):
     def __init__(self, num_inputs, num_actions, hidden_size, device):
-        super(PolicyNetwork, self).__init__()
+        super().__init__()
 
         self.device = device
 
@@ -66,16 +66,16 @@ class PolicyNetwork(nn.Module):
 
         self.mean_linear = nn.Linear(hidden_size, num_actions)
         self.mean_linear.weight.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
-        self.mean_linear.bias.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
+        self.mean_linear.bias.data.uniform_(0, INIT_WEIGHT)
 
         self.log_std_linear = nn.Linear(hidden_size, num_actions)
         self.log_std_linear.weight.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
-        self.log_std_linear.bias.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
+        self.log_std_linear.bias.data.uniform_(0, INIT_WEIGHT)
 
         self.linear1.weight.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
-        self.linear1.bias.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
+        self.linear1.bias.data.uniform_(0, INIT_WEIGHT)
         self.linear2.weight.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
-        self.linear2.bias.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
+        self.linear2.bias.data.uniform_(0, INIT_WEIGHT)
 
     def forward(self, state):
         x = F.relu(self.linear1(state))

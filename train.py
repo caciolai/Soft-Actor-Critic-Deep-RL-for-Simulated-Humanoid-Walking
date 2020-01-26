@@ -42,7 +42,7 @@ def train(env, agent, args):
             next_state, reward, done, info = env.step(action)
             replay_buffer.append(state, action, reward, next_state, done)
 
-            if len(replay_buffer) > args.batch_size:
+            if total_steps > args.learning_starts and len(replay_buffer) > args.batch_size:
                 agent.update(replay_buffer, args.batch_size, updates)
                 updates += 1
 

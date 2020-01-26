@@ -13,14 +13,14 @@ def build_parser():
     parser.add_argument("--render", action="store_true",
                         help="Render simulation (default: False)")
 
-    parser.add_argument("--tensorboard", action="store_true",
-                        help="Use tensorboard for tracking (default: False)")
-
     parser.add_argument("--verbose", type=int, default=1, metavar="",
                         help="Verbose level [0..3] (default: 1)")
 
-    parser.add_argument("--target_alpha", type=float, default=None, metavar="",
-                        help="Target alpha (default: None -> dim(A))")
+    parser.add_argument("--initial_alpha", type=float, default=None, metavar="",
+                        help="Initial value for alpha (default: None -> 0)")
+
+    parser.add_argument("--entropy_target", type=float, default=None, metavar="",
+                        help="Entropy target for alpha update (default: None -> -dim(A))")
 
     parser.add_argument("--gamma", type=float, default=0.99, metavar="",
                         help="Discount factor for reward (default: 0.99)")
@@ -59,6 +59,10 @@ def build_parser():
     parser.add_argument("--final_epsilon", type=float, default=None, metavar="",
                         help="Final value of epsilon (default: None) "
                              "[must be set along with --epsilon_decrease]")
+
+    parser.add_argument("--learning_starts", type=int, default=0, metavar="",
+                        help="How many steps of the model to collect transitions for "
+                             "before learning starts (default: 0)")
 
     parser.add_argument("--max_episodes", type=int, default=None, metavar="",
                         help="Maximum number of episodes (default: None)")

@@ -38,12 +38,16 @@ class SAC:
         self.policy_optimizer = optim.Adam(self.policy_net.parameters(), lr=self.lr)
 
         # for optimizing alpha
-        if args.target_alpha is not None:
-            self.target_entropy = args.target_alpha
+        if args.initial_alpha is not None:
+            self.alpha = torch.tensor(args.initial_alpha, requires_grad=True, device=self.device, dtype=torch.float)
         else:
-            self.target_entropy = -1. * torch.tensor(action_space.shape).to(self.device).item()
+            self.alpha = torch.rand(1, requires_grad=True, device=self.device, dtype=torch.float)
 
-        self.alpha = torch.zeros(1, requires_grad=True, device=self.device)
+        if args.entropy_target is not None:
+            self.entropy_target = torch.tensor(args.target_alpha, device=self.device, dtype=torch.float)
+        else:
+            self.entropy_target = -1. * torch.tensor(action_space.shape, device=self.device, dtype=torch.float)
+
         self.alpha_optimizer = optim.Adam([self.alpha], lr=self.lr)
 
 
@@ -105,7 +109,7 @@ class SAC:
         self.policy_optimizer.step()
 
         # Optimizing alpha
-        alpha_loss = (-1. * self.alpha * (log_prob + self.target_entropy).detach()).mean()
+        alpha_loss = (self.alpha * (-log_prob - self.entropy_target).detach()).mean()
 
         self.alpha_optimizer.zero_grad()
         alpha_loss.backward()
