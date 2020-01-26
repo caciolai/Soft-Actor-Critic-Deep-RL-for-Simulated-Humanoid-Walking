@@ -7,7 +7,7 @@ from replay_buffer import ReplayBuffer
 
 def train(env, agent, args):
 
-    if args.max_episode_steps:
+    if args.max_episode_steps is not None:
         env._max_episode_steps = args.max_episode_steps
 
     # saved agents dir
@@ -27,7 +27,7 @@ def train(env, agent, args):
         episode_return = 0
         i_step = 0
 
-        while i_step < env._max_episode_steps:
+        for i_step in itertools.count(0):
             if args.render:
                 env.render()
 
@@ -59,7 +59,7 @@ def train(env, agent, args):
             i_episode, total_steps, i_step, episode_return
         ))
 
-        if total_steps > args.max_steps:
+        if args.max_steps is not None and total_steps > args.max_steps:
             break
 
         if epsilon is not None:

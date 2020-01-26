@@ -13,8 +13,7 @@ def main():
     args = parser.parse_args()
 
     # environment setup
-    env = gym.envs.make("Pendulum-v0")
-    env._max_episode_steps = args.max_episode_steps
+    env = gym.make("MountainCarContinuous-v0")
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
     env.seed(args.seed)

@@ -17,6 +17,10 @@ def build_parser():
     parser.add_argument("--verbose", type=int, default=1, metavar="",
                         help="Verbose level [1..3] (default: 1)")
 
+    parser.add_argument("--target_alpha_scale", type=float, default=1, metavar="",
+                        help="Scale of desired target alpha wrt to recommended one from "
+                             "the Harnojaa paper (-dim(A)) (default: 1)")
+
     parser.add_argument("--gamma", type=float, default=0.99, metavar="",
                         help="Discount factor for reward (default: 0.99)")
 
@@ -32,11 +36,11 @@ def build_parser():
     parser.add_argument("--replay_size", type=int, default=1000000, metavar="",
                         help="Size of replay buffer (default: 1e6)")
 
-    parser.add_argument("--seed", type=int, default=0, metavar="",
-                        help="Random seed (default: 0)")
-
     parser.add_argument("--batch_size", type=int, default=256, metavar="",
                         help="Batch size (default: 256)")
+
+    parser.add_argument("--seed", type=int, default=0, metavar="",
+                        help="Random seed (default: 0)")
 
     parser.add_argument("--initial_epsilon", type=float, default=None, metavar="",
                         help="Initial value of epsilon, which is the probability of"
@@ -54,6 +58,9 @@ def build_parser():
     parser.add_argument("--final_epsilon", type=float, default=None, metavar="",
                         help="Final value of epsilon (default: None) "
                              "[must be set along with --epsilon_decrease]")
+
+    parser.add_argument("--max_episodes", type=int, default=None, metavar="",
+                        help="Maximum number of episodes (default: None)")
 
     parser.add_argument("--max_steps", type=int, default=None, metavar="",
                         help="Maximum number of timesteps (default: None)")
