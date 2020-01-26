@@ -17,6 +17,10 @@ class ValueNetwork(nn.Module):
         self.linear2 = nn.Linear(hidden_dim, hidden_dim)
         self.linear3 = nn.Linear(hidden_dim, 1)
 
+        self.linear1.weight.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
+        self.linear1.bias.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
+        self.linear2.weight.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
+        self.linear2.bias.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
         self.linear3.weight.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
         self.linear3.bias.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
 
@@ -35,6 +39,11 @@ class SoftQNetwork(nn.Module):
         self.linear2 = nn.Linear(hidden_size, hidden_size)
         self.linear3 = nn.Linear(hidden_size, 1)
 
+
+        self.linear1.weight.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
+        self.linear1.bias.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
+        self.linear2.weight.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
+        self.linear2.bias.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
         self.linear3.weight.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
         self.linear3.bias.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
 
@@ -62,6 +71,11 @@ class PolicyNetwork(nn.Module):
         self.log_std_linear = nn.Linear(hidden_size, num_actions)
         self.log_std_linear.weight.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
         self.log_std_linear.bias.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
+
+        self.linear1.weight.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
+        self.linear1.bias.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
+        self.linear2.weight.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
+        self.linear2.bias.data.uniform_(-INIT_WEIGHT, INIT_WEIGHT)
 
     def forward(self, state):
         x = F.relu(self.linear1(state))

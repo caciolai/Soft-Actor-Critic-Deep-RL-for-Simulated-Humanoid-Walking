@@ -17,7 +17,7 @@ def build_parser():
                         help="Use tensorboard for tracking (default: False)")
 
     parser.add_argument("--verbose", type=int, default=1, metavar="",
-                        help="Verbose level [1..3] (default: 1)")
+                        help="Verbose level [0..3] (default: 1)")
 
     parser.add_argument("--target_alpha", type=float, default=None, metavar="",
                         help="Target alpha (default: None -> dim(A))")
@@ -44,7 +44,7 @@ def build_parser():
                         help="Random seed (default: 0)")
 
     parser.add_argument("--initial_epsilon", type=float, default=None, metavar="",
-                        help="Initial value of epsilon, which is the probability of"
+                        help="Initial value of epsilon, which is the probability of "
                              "random sampling environment actions (default: None) "
                              "[must be set along with --epsilon_decrease]")
 
@@ -118,7 +118,7 @@ def plot_data(data, title, x_label, y_label, smoothness=0.6):
     plt.grid(True)
     plt.ion()
     plt.draw()
-    plt.pause(0.01)
+    plt.pause(0.1)
     plt.clf()
 
 def plot_episodes_reward(episodes_reward_list):

@@ -63,7 +63,10 @@ def train(env, agent, args):
         if args.plot:
             plot_episodes_reward(returns)
 
-        if args.max_steps is not None and total_steps > args.max_steps:
+        if args.max_episodes is not None and i_episode >= args.max_episodes:
+            break
+
+        if args.max_steps is not None and total_steps >= args.max_steps:
             break
 
         if epsilon is not None:

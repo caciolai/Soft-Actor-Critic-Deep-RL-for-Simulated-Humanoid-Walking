@@ -43,9 +43,8 @@ class SAC:
         else:
             self.target_entropy = -1. * torch.tensor(action_space.shape).to(self.device).item()
 
-        self.log_alpha = torch.zeros(1, requires_grad=True, device=self.device)
-        self.alpha = self.log_alpha.exp()
-        self.alpha_optimizer = optim.Adam([self.log_alpha], lr=self.lr)
+        self.alpha = torch.zeros(1, requires_grad=True, device=self.device)
+        self.alpha_optimizer = optim.Adam([self.alpha], lr=self.lr)
 
 
     def update(self, replay_buffer, batch_size, updates):
@@ -106,12 +105,11 @@ class SAC:
         self.policy_optimizer.step()
 
         # Optimizing alpha
-        alpha_loss = (-1. * self.log_alpha * (log_prob + self.target_entropy).detach()).mean()
+        alpha_loss = (-1. * self.alpha * (log_prob + self.target_entropy).detach()).mean()
 
         self.alpha_optimizer.zero_grad()
         alpha_loss.backward()
         self.alpha_optimizer.step()
-        self.alpha = self.log_alpha.exp()
 
         # # Update Target Value
         # if updates % self.target_update_interval == 0:

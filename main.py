@@ -15,7 +15,7 @@ def main():
     args = parser.parse_args()
 
     # environment setup
-    env = FeaturizedStates(NormalizedActions(gym.make("Pendulum-v0")))
+    env = FeaturizedStates(NormalizedActions(gym.make("MountainCarContinuous-v0")))
     # env = NormalizedActions(gym.make("Pendulum-v0"))
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
@@ -33,13 +33,6 @@ def main():
         t.add_rows([["Argument", "Value"]] + [[arg, getattr(args, arg)] for arg in vars(args)])
         print(t.draw())
 
-        print("\nEpisode time horizon: {} steps.".format(env.get_max_episode_steps()))
-        print("\nObservation space shape: {}".format(env.observation_space.shape))
-        print("Observation space range: [{}, {}]".format(
-            env.observation_space.low, env.observation_space.high)
-        )
-        print("\nAction space shape: {}".format(env.action_space.shape))
-        print("Action space range: [{}, {}]".format(env.action_space.low, env.action_space.high))
         print("\nUsing device: {}".format(torch.cuda.get_device_properties(agent.device)))
         print("\nStarting training.")
 
