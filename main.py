@@ -7,18 +7,18 @@ from warnings import simplefilter
 
 from train import train, test
 from sac import SAC
-from utils import FeaturizedStates, NormalizedActions, build_parser, params_grid_search
+from utils import FeaturizedStates, NormalizedActions, build_argsparser, params_grid_search
 
 
 def main():
     simplefilter(action="ignore", category=UserWarning)
     simplefilter(action="ignore", category=FutureWarning)
-    parser = build_parser()
+    parser = build_argsparser()
     args = parser.parse_args()
 
     # environment setup
     # env = NormalizedActions(gym.make("Pendulum-v0"))
-    env = FeaturizedStates(NormalizedActions(gym.make("MountainCarContinuous-v0")))
+    env = FeaturizedStates(NormalizedActions(gym.make("Pendulum-v0")))
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
     env.seed(args.seed)
@@ -50,11 +50,13 @@ def main():
             traceback.print_exc()
         finally:
             print("\nTraining terminated.")
+            if args.save_params is not None:
+                agent.save_networks_parameters(args.save_params)
+
             env.close()
 
         if args.testing:
-            input("\nPress ENTER to initiate testing.")
-            # testing
+            input("\nPress ENTER to begin testing.")
             try:
                 env = FeaturizedStates(NormalizedActions(gym.make("Pendulum-v0")))
                 test(env, agent, args.testing_steps)
@@ -65,7 +67,6 @@ def main():
             finally:
                 print("\nTesting terminated.")
                 env.close()
-
 
 
 

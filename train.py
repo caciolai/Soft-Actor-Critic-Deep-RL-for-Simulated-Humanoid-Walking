@@ -1,4 +1,3 @@
-import datetime
 import itertools
 import numpy as np
 
@@ -13,11 +12,6 @@ def train(env, agent, args, return_type=0):
     if args.max_episode_steps is not None:
         env.set_max_episode_steps(args.max_episode_steps)
 
-    # saved agents dir
-    if args.save_params_interval:
-        prefix = "SavedAgents/{}".format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
-
-    # replay buffer
     replay_buffer = ReplayBuffer(args.replay_size)
 
     total_steps = 0
@@ -48,7 +42,6 @@ def train(env, agent, args, return_type=0):
                 for _ in range(args.gradient_steps):
                     agent.update(replay_buffer, args.batch_size, updates)
                     updates += 1
-
 
             state = next_state
             episode_return += reward
@@ -87,7 +80,6 @@ def train(env, agent, args, return_type=0):
 
 def test(env, agent, testing_steps):
 
-    # Run a demo of the environment
     total_steps = 0
     while total_steps < testing_steps:
         state = env.reset()
@@ -98,3 +90,4 @@ def test(env, agent, testing_steps):
             if done:
                 break
     env.close()
+

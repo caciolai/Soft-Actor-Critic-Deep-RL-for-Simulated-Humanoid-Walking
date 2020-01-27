@@ -17,7 +17,7 @@ ARGS = None
 ENV = None
 
 
-def build_parser():
+def build_argsparser():
     parser = argparse.ArgumentParser(description="PyTorch SAC")
 
     parser.add_argument("--render", action="store_true",
@@ -63,15 +63,17 @@ def build_parser():
 
     parser.add_argument("--epsilon_decay", type=float, default=None, metavar="",
                         help="Exponential decay of epsilon (default: None)"
-                             "[must be set along with --initial_epsilon]")
+                             "[meaningless without --initial_epsilon] "
+                             "[conflicts with --epsilon_decrease]")
 
     parser.add_argument("--epsilon_decrease", type=float, default=None, metavar="",
                         help="Linear decrease of epsilon (default: None)"
-                             "[must be set along with --initial_epsilon]")
+                             "[meaningless without --initial_epsilon] "
+                             "[conflicts with --epsilon_decay]")
 
-    parser.add_argument("--final_epsilon", type=float, default=None, metavar="",
-                        help="Final value of epsilon (default: None) "
-                             "[must be set along with --epsilon_decrease]")
+    parser.add_argument("--final_epsilon", type=float, default=0, metavar="",
+                        help="Final value of epsilon (default: 0) "
+                             "[meaningless with --initial_epsilon and --epsilon_decrease]")
 
     parser.add_argument("--learning_starts", type=int, default=0, metavar="",
                         help="How many steps of the model to collect transitions for "
@@ -94,11 +96,12 @@ def build_parser():
     parser.add_argument("--target_update_interval", type=int, default=1, metavar="",
                         help="Value target update per number of updates per step (default: 1)")
 
-    parser.add_argument("--save_params_interval", type=int, default=None, metavar="",
-                        help="If set, interval of episodes to save net params (default: None)")
-
     parser.add_argument("--load_params", type=str, default=None, metavar="",
-                        help="Directory with the neural network parameters to be loaded (default: None)")
+                        help="Directory with the neural networks parameters to be loaded (default: None)")
+
+    parser.add_argument("--save_params", type=str, default=None, metavar="",
+                        help="Directory to which to save the neural networks parameters "
+                             "at the end of the training (default: None)")
 
     parser.add_argument("--testing", action="store_true",
                         help="Make a test after training")

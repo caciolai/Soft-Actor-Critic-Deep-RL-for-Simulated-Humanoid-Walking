@@ -31,7 +31,7 @@ class ValueNetwork(nn.Module):
         return x
 
 
-class SoftQNetwork(nn.Module):
+class QNetwork(nn.Module):
     def __init__(self, num_inputs, num_actions, hidden_size):
         super().__init__()
 

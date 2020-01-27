@@ -1,9 +1,10 @@
 import os
 import datetime
-
-import numpy as np
+import torch
+import torch.nn as nn
 import torch.optim as optim
-from networks import *
+import numpy as np
+from networks import QNetwork, PolicyNetwork, hard_update, soft_update
 
 
 class SAC:
@@ -20,22 +21,22 @@ class SAC:
         # self.value_net = ValueNetwork(self.state_dim, self.hidden_dim).to(self.device)
         # self.target_value_net = ValueNetwork(self.state_dim, self.hidden_dim).to(self.device)
         # hard_update(self.value_net, self.target_value_net)
-        self.soft_q_net1 = SoftQNetwork(self.state_dim, self.action_dim, self.hidden_dim).to(self.device)
-        self.soft_q_net2 = SoftQNetwork(self.state_dim, self.action_dim, self.hidden_dim).to(self.device)
-        self.target_q_net1 = SoftQNetwork(self.state_dim, self.action_dim, self.hidden_dim).to(self.device)
-        self.target_q_net2 = SoftQNetwork(self.state_dim, self.action_dim, self.hidden_dim).to(self.device)
-        hard_update(self.soft_q_net1, self.target_q_net1)
-        hard_update(self.soft_q_net2, self.target_q_net2)
+        self.q_net1 = QNetwork(self.state_dim, self.action_dim, self.hidden_dim).to(self.device)
+        self.q_net2 = QNetwork(self.state_dim, self.action_dim, self.hidden_dim).to(self.device)
+        self.target_q_net1 = QNetwork(self.state_dim, self.action_dim, self.hidden_dim).to(self.device)
+        self.target_q_net2 = QNetwork(self.state_dim, self.action_dim, self.hidden_dim).to(self.device)
+        hard_update(self.q_net1, self.target_q_net1)
+        hard_update(self.q_net2, self.target_q_net2)
         self.policy_net = PolicyNetwork(self.state_dim, self.action_dim, self.hidden_dim, self.device).to(self.device)
 
         # self.value_criterion = nn.MSELoss()
-        self.soft_q_criterion1 = nn.MSELoss()
-        self.soft_q_criterion2 = nn.MSELoss()
+        self.q1_criterion = nn.MSELoss()
+        self.q2_criterion = nn.MSELoss()
 
         # self.value_optimizer = optim.Adam(self.value_net.parameters(), lr=self.lr)
-        self.soft_q_optimizer1 = optim.Adam(self.soft_q_net1.parameters(), lr=self.lr)
-        self.soft_q_optimizer2 = optim.Adam(self.soft_q_net2.parameters(), lr=self.lr)
-        self.policy_optimizer = optim.Adam(self.policy_net.parameters(), lr=self.lr)
+        self.q1_optim = optim.Adam(self.q_net1.parameters(), lr=self.lr)
+        self.q2_optim = optim.Adam(self.q_net2.parameters(), lr=self.lr)
+        self.policy_optim = optim.Adam(self.policy_net.parameters(), lr=self.lr)
 
         # for optimizing alpha
         if args.initial_alpha is not None:
@@ -48,42 +49,42 @@ class SAC:
         else:
             self.entropy_target = -1. * torch.tensor(action_space.shape, device=self.device, dtype=torch.float)
 
-        self.alpha_optimizer = optim.Adam([self.alpha], lr=self.lr)
+        self.alpha_optim = optim.Adam([self.alpha], lr=self.lr)
 
 
     def update(self, replay_buffer, batch_size, updates):
-        state, action, reward, next_state, done = replay_buffer.sample(batch_size)
+        state_batch, action_batch, reward_batch, next_state_batch, done_batch = replay_buffer.sample(batch_size)
 
-        state = torch.from_numpy(state).to(self.device, dtype=torch.float)
-        next_state = torch.from_numpy(next_state).to(self.device, dtype=torch.float)
-        action = torch.from_numpy(action).to(self.device, dtype=torch.float)
-        reward = torch.from_numpy(reward).unsqueeze(1).to(self.device, dtype=torch.float)
-        done = torch.from_numpy(np.float32(done)).unsqueeze(1).to(self.device, dtype=torch.float)
+        state_batch = torch.from_numpy(state_batch).to(self.device, dtype=torch.float)
+        next_state_batch = torch.from_numpy(next_state_batch).to(self.device, dtype=torch.float)
+        action_batch = torch.from_numpy(action_batch).to(self.device, dtype=torch.float)
+        reward_batch = torch.from_numpy(reward_batch).unsqueeze(1).to(self.device, dtype=torch.float)
+        done_batch = torch.from_numpy(np.float32(done_batch)).unsqueeze(1).to(self.device, dtype=torch.float)
 
-        predicted_q_value1 = self.soft_q_net1(state, action)
-        predicted_q_value2 = self.soft_q_net2(state, action)
+        current_value1 = self.q_net1(state_batch, action_batch)
+        current_value2 = self.q_net2(state_batch, action_batch)
         # predicted_value = self.value_net(state)
-        sampled_action, log_prob, epsilon, mean, log_std = self.policy_net.sample(state)
+        sampled_action, log_prob, epsilon, mean, log_std = self.policy_net.sample(state_batch)
 
         alpha = self.alpha
 
         # Training Q Function
         target_next_value = torch.min(
-            self.target_q_net1(next_state, sampled_action),
-            self.target_q_net2(next_state, sampled_action)
+            self.target_q_net1(next_state_batch, sampled_action),
+            self.target_q_net2(next_state_batch, sampled_action)
         ) - alpha * log_prob
 
         # target_next_value = self.target_value_net(next_state)
-        expected_q_value = reward + (1 - done) * self.gamma * target_next_value
-        q_value_loss1 = self.soft_q_criterion1(predicted_q_value1, expected_q_value.detach())
-        q_value_loss2 = self.soft_q_criterion2(predicted_q_value2, expected_q_value.detach())
+        expected_next_value = reward_batch + (1 - done_batch) * self.gamma * target_next_value
+        q_value_loss1 = self.q1_criterion(current_value1, expected_next_value.detach())
+        q_value_loss2 = self.q2_criterion(current_value2, expected_next_value.detach())
 
-        self.soft_q_optimizer1.zero_grad()
+        self.q1_optim.zero_grad()
         q_value_loss1.backward()
-        self.soft_q_optimizer1.step()
-        self.soft_q_optimizer2.zero_grad()
+        self.q1_optim.step()
+        self.q2_optim.zero_grad()
         q_value_loss2.backward()
-        self.soft_q_optimizer2.step()
+        self.q2_optim.step()
 
         # # Training Value Function
         # sampled_q_value = torch.min(
@@ -99,21 +100,21 @@ class SAC:
 
         # Training Policy Function
         sampled_q_value = torch.min(
-            self.soft_q_net1(state, sampled_action),
-            self.soft_q_net2(state, sampled_action)
+            self.q_net1(state_batch, sampled_action),
+            self.q_net2(state_batch, sampled_action)
         )
         policy_loss = (alpha * log_prob - sampled_q_value).mean()
 
-        self.policy_optimizer.zero_grad()
+        self.policy_optim.zero_grad()
         policy_loss.backward()
-        self.policy_optimizer.step()
+        self.policy_optim.step()
 
         # Optimizing alpha
         alpha_loss = (self.alpha * (-log_prob - self.entropy_target).detach()).mean()
 
-        self.alpha_optimizer.zero_grad()
+        self.alpha_optim.zero_grad()
         alpha_loss.backward()
-        self.alpha_optimizer.step()
+        self.alpha_optim.step()
 
         # # Update Target Value
         # if updates % self.target_update_interval == 0:
@@ -121,8 +122,8 @@ class SAC:
 
         # Update Q Target Value
         if updates % self.target_update_interval == 0:
-            soft_update(self.soft_q_net1, self.target_q_net1, self.tau)
-            soft_update(self.soft_q_net2, self.target_q_net2, self.tau)
+            soft_update(self.q_net1, self.target_q_net1, self.tau)
+            soft_update(self.q_net2, self.target_q_net2, self.tau)
 
 
 
@@ -139,13 +140,14 @@ class SAC:
         policy_path = prefix + "/" + "policy_net_params"
         q1_path = prefix + "/" + "q1_net_params"
         q2_path = prefix + "/" + "q2_net_params"
-        value_path = prefix + "/" + "value_net_params"
+        # value_path = prefix + "/" + "value_net_params"
 
-        print("Saving parameters to {}, {}, {} and {}".format(policy_path, q1_path, q2_path, value_path))
+        # print("Saving parameters to {}, {}, {} and {}".format(policy_path, q1_path, q2_path, value_path))
+        print("Saving parameters to {}, {}, {}".format(q1_path, q2_path, policy_path))
 
+        torch.save(self.q_net1.state_dict(), q1_path)
+        torch.save(self.q_net2.state_dict(), q2_path)
         torch.save(self.policy_net.state_dict(), policy_path)
-        torch.save(self.soft_q_net1.state_dict(), q1_path)
-        torch.save(self.soft_q_net2.state_dict(), q2_path)
         # torch.save(self.value_net.state_dict(), value_path)
 
     def load_networks_parameters(self, params_path):
@@ -157,8 +159,8 @@ class SAC:
 
             q1_path = params_path + "/" + "q1_net_params"
             q2_path = params_path + "/" + "q2_net_params"
-            self.soft_q_net1.load_state_dict(torch.load(q1_path))
-            self.soft_q_net2.load_state_dict(torch.load(q2_path))
+            self.q_net1.load_state_dict(torch.load(q1_path))
+            self.q_net2.load_state_dict(torch.load(q2_path))
 
             # value_path = params_path + "/" + "value_net_params"
             # self.value_net.load_state_dict(torch.load(value_path))
