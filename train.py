@@ -60,7 +60,7 @@ def train(env, agent, args):
             i_episode, total_steps, i_step, episode_return
         ))
 
-        if args.plot:
+        if args.plot and i_episode % args.plot_interval == 0:
             plot_episodes_reward(returns)
 
         if args.max_episodes is not None and i_episode >= args.max_episodes:

@@ -97,7 +97,10 @@ def build_parser():
                         help="Number of testing steps (default 1000) [need --testing]")
 
     parser.add_argument("--plot", action="store_true",
-                        help="Plot reward curve each episode (default: False)")
+                        help="Plot reward curve (default: False)")
+
+    parser.add_argument("--plot_interval", type=int, default=1, metavar="",
+                        help="Number of episodes between plots (default: 1)")
 
     return parser
 
@@ -123,7 +126,6 @@ def plot_data(data, title, x_label, y_label, smoothness=0.6):
     plt.ion()
     plt.draw()
     plt.pause(0.1)
-    plt.clf()
 
 def plot_episodes_reward(episodes_reward_list):
     title = "Reward per episode"

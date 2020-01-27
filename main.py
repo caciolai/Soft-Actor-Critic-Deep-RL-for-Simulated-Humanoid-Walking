@@ -15,8 +15,8 @@ def main():
     args = parser.parse_args()
 
     # environment setup
-    env = FeaturizedStates(NormalizedActions(gym.make("MountainCarContinuous-v0")))
     # env = NormalizedActions(gym.make("Pendulum-v0"))
+    env = FeaturizedStates(NormalizedActions(gym.make("Pendulum-v0")))
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
     env.seed(args.seed)
