@@ -122,3 +122,4 @@ def soft_update(source_net, target_net, tau):
         target_param.data.copy_(
             target_param.data * (1.0 - tau) + param.data * tau
         )
+

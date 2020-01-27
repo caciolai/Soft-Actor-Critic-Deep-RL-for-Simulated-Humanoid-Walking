@@ -91,7 +91,7 @@ def build_argsparser():
                         help="Render simulation (default: False)")
 
     parser.add_argument("--verbose", type=int, default=1, metavar="",
-                        help="Verbose level [0..3] (default: 1)")
+                        help="Verbose level [0..2] (default: 1)")
 
     parser.add_argument("--load_params", type=str, default=None, metavar="",
                         help="Directory with the neural networks parameters to be loaded (default: None)")
@@ -128,11 +128,11 @@ def build_argsparser():
     return parser
 
 
-def smooth(data, smoothness=0.25):
+def smooth(data, smoothness):
     smoothed = list()
     n = len(data)
     k = int(smoothness * len(data) / 2)
-    for i, data_point in enumerate(data):
+    for i, datapoint in enumerate(data):
         a = max(0, int(i - k))
         b = min(n, int(i + k))
         smoothed_val = np.mean(data[a:b+1])
@@ -140,12 +140,22 @@ def smooth(data, smoothness=0.25):
 
     return smoothed
 
-def plot_data(data, title, x_label, y_label):
+def mean_k(data, k):
+    n = len(data)
+    mean_k_data = list()
+    for i, datapoint in enumerate(data):
+        a = max(0, i-k)
+        b = min(n, i+k)
+        mean_k_datapoint = np.mean(data[a, b+1])
+        mean_k_data.append(mean_k_datapoint)
+
+    return mean_k_data
+
+def plot_data(data, title, x_label, y_label, smoothness=0.01):
     if not mlp.is_interactive():
         plt.ion()
     plt.clf()
-    smoothed_data = smooth(data)
-    plt.plot(np.arange(1, len(data)+1), smoothed_data)
+    plt.plot(np.arange(1, len(data)+1), data)
     plt.title(title)
     plt.xlabel(x_label)
     plt.ylabel(y_label)
@@ -157,7 +167,13 @@ def plot_episodes_return(episodes_return):
     title = "Return per episode"
     x_label = "Episode"
     y_label = "Return"
-    plot_data(episodes_return, title, x_label, y_label)
+    plot_data(smooth(episodes_return, 0.1), title, x_label, y_label)
+
+def plot_mean_k_episodes_return(episodes_return, k=100):
+    title = "Mean {} episodes return".format(k)
+    x_label = "Episode"
+    y_label = "Return"
+    plot_data(mean_k(episodes_return, k), title, x_label, y_label)
 
 def save_plot():
     plt.ioff()
@@ -262,6 +278,7 @@ def cumulated_loss(params):
 
     agent = SAC(ENV.observation_space, ENV.action_space, ARGS)
 
-    cumulated_return = train(ENV, agent, ARGS, return_type=1)
+    returns = train(ENV, agent, ARGS)
+    cumulated_return = returns.sum()
     ENV.close()
     return -cumulated_return

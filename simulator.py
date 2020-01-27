@@ -3,10 +3,7 @@ import numpy as np
 
 from replay_buffer import ReplayBuffer
 
-############################################
-# return type: 0 -> no return
-#              1 -> return cumulated return
-############################################
+
 def train(env, agent, args, return_type=0):
 
     if args.max_episode_steps is not None:
@@ -36,11 +33,17 @@ def train(env, agent, args, return_type=0):
                 action = agent.choose_action(state)
 
             next_state, reward, done, info = env.step(action)
+            if args.verbose >= 2:
+                print("Step: {}".format(i_step))
+                print("(s,a,r,s',d): ({}, {}, {}, {}, {})".format(state, action, reward, next_state, done))
+
             replay_buffer.append(state, action, reward, next_state, done)
 
             if total_steps > args.learning_starts and len(replay_buffer) > args.batch_size:
                 for _ in range(args.gradient_steps):
-                    agent.update(replay_buffer, args.batch_size, updates)
+                    q1l, q2l, pl, al = agent.update(replay_buffer, args.batch_size, updates)
+                    if args.verbose >= 2:
+                        print("Losses: ({}, {}, {}, {})".format(q1l, q2l, pl, al))
                     updates += 1
 
             state = next_state
@@ -53,21 +56,22 @@ def train(env, agent, args, return_type=0):
 
         returns.append(episode_return)
         if args.verbose >= 1:
-            msg = "Episode: {}. Steps: {}. Episode steps: {}. Episode return: {:.3f}.\n".format(
+            summary = "Episode: {}. Steps: {}. Episode steps: {}. Episode return: {:.3f}.\n".format(
                 i_episode, total_steps, i_step, episode_return
             )
             if args.learning_starts > total_steps:
-                msg += "Learning starts in: {} steps. ".format(args.learning_starts - total_steps)
+                summary += "Learning starts in: {} steps. ".format(args.learning_starts - total_steps)
             if args.exploratory_steps > total_steps:
-                msg += "Exploratory steps left: {}. ".format(args.exploratory_steps - total_steps)
+                summary += "Exploratory steps left: {}. ".format(args.exploratory_steps - total_steps)
             elif epsilon > 0:
-                msg += "Epsilon: {:.3f}.".format(epsilon)
+                summary += "Epsilon: {:.3f}.".format(epsilon)
 
-            print(msg)
+            print(summary)
 
         if args.plot and i_episode % args.plot_interval == 0:
-            from utils import plot_episodes_return
-            plot_episodes_return(returns)
+            from utils import plot_episodes_return, \
+                plot_mean_k_episodes_return # to avoid import cycle at the beginning
+            plot_mean_k_episodes_return(returns)
 
         if args.train_episodes is not None and i_episode >= args.train_episodes:
             break
@@ -80,8 +84,7 @@ def train(env, agent, args, return_type=0):
             elif args.epsilon_decay > 0:
                 epsilon *= args.epsilon_decay
 
-    if return_type == 1:
-        return np.array(returns).sum()
+    return np.array(returns)
 
 
 

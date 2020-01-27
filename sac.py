@@ -76,14 +76,14 @@ class SAC:
 
         # target_next_value = self.target_value_net(next_state)
         expected_next_value = reward_batch + (1 - done_batch) * self.gamma * target_next_value
-        q_value_loss1 = self.q1_criterion(current_value1, expected_next_value.detach())
-        q_value_loss2 = self.q2_criterion(current_value2, expected_next_value.detach())
+        q1_loss = self.q1_criterion(current_value1, expected_next_value.detach())
+        q2_loss = self.q2_criterion(current_value2, expected_next_value.detach())
 
         self.q1_optim.zero_grad()
-        q_value_loss1.backward()
+        q1_loss.backward()
         self.q1_optim.step()
         self.q2_optim.zero_grad()
-        q_value_loss2.backward()
+        q2_loss.backward()
         self.q2_optim.step()
 
         # # Training Value Function
@@ -125,6 +125,7 @@ class SAC:
             soft_update(self.q_net1, self.target_q_net1, self.tau)
             soft_update(self.q_net2, self.target_q_net2, self.tau)
 
+        return q1_loss.item(), q2_loss.item(), policy_loss.item(), alpha_loss.item()
 
 
     def choose_action(self, state):
@@ -166,3 +167,4 @@ class SAC:
 
             # value_path = params_path + "/" + "value_net_params"
             # self.value_net.load_state_dict(torch.load(value_path))
+
