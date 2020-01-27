@@ -28,9 +28,9 @@ def train(env, agent, args, return_type=0):
             if args.render:
                 env.render()
 
-            if args.exploratory_steps is not None and total_steps <= args.exploratory_steps:
+            if total_steps <= args.exploratory_steps:
                 action = env.action_space.sample()
-            elif epsilon is not None and np.random.uniform(0,1) <= epsilon:
+            elif epsilon > 0 and np.random.uniform(0,1) <= epsilon:
                 action = env.action_space.sample()
             else:
                 action = agent.choose_action(state)
@@ -53,24 +53,31 @@ def train(env, agent, args, return_type=0):
 
         returns.append(episode_return)
         if args.verbose >= 1:
-            print("Episode: {}. Steps: {}. Episode steps: {}. Episode return: {}".format(
+            msg = "Episode: {}. Steps: {}. Episode steps: {}. Episode return: {:.3f}.\n".format(
                 i_episode, total_steps, i_step, episode_return
-            ))
+            )
+            if args.exploratory_steps > total_steps:
+                msg += "Exploratory steps left: {}. ".format(args.exploratory_steps - total_steps)
+            if args.learning_starts > total_steps:
+                msg += "Learning starts in: {} steps. ".format(args.learning_starts - total_steps)
+            if epsilon > 0:
+                msg += "Epsilon: {}.".format(epsilon)
+
+            print(msg)
 
         if args.plot and i_episode % args.plot_interval == 0:
             from utils import plot_episodes_return
             plot_episodes_return(returns)
 
-        if args.max_episodes is not None and i_episode >= args.max_episodes:
+        if args.train_episodes is not None and i_episode >= args.train_episodes:
             break
 
-        if args.max_steps is not None and total_steps >= args.max_steps:
-            break
-
-        if epsilon is not None:
-            if args.epsilon_decrease is not None and epsilon > args.final_epsilon:
-                epsilon -= args.epsilon_decrease
-            elif args.epsilon_decay is not None:
+        if epsilon > 0 and \
+        total_steps > args.learning_starts and \
+        total_steps > args.exploratory_steps:
+            if args.epsilon_decrease > 0 and epsilon > args.final_epsilon:
+                epsilon = max(args.final_epsilon, epsilon - args.epsilon_decrease)
+            elif args.epsilon_decay > 0:
                 epsilon *= args.epsilon_decay
 
     if return_type == 1:
@@ -78,16 +85,20 @@ def train(env, agent, args, return_type=0):
 
 
 
-def test(env, agent, testing_steps):
-
-    total_steps = 0
-    while total_steps < testing_steps:
+def test(env, agent, test_episodes):
+    episodes = 0
+    for _ in itertools.count(1):
+        episodes += 1
         state = env.reset()
-        for _ in range(env._max_episode_steps):
+        for _ in range(env.get_max_episode_steps()):
             env.render()
             action = agent.choose_action(state)
             state, reward, done, info = env.step(action)
             if done:
                 break
+
+        if test_episodes is not None and \
+        episodes >= test_episodes:
+            break
     env.close()
 

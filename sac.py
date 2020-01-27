@@ -131,16 +131,18 @@ class SAC:
         action = self.policy_net.get_action(state)
         return action.detach().numpy()
 
-    def save_networks_parameters(self, prefix=None):
-        if not prefix:
-            prefix = "SavedAgents/" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    def save_networks_parameters(self, params_dir=None):
+        if params_dir is None:
+            params_dir = "SavedAgents/"
+
+        prefix = params_dir + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + "/"
         if not os.path.exists(prefix):
             os.makedirs(prefix)
 
-        policy_path = prefix + "/" + "policy_net_params"
-        q1_path = prefix + "/" + "q1_net_params"
-        q2_path = prefix + "/" + "q2_net_params"
-        # value_path = prefix + "/" + "value_net_params"
+        policy_path = prefix + "policy_net_params"
+        q1_path = prefix + "q1_net_params"
+        q2_path = prefix + "q2_net_params"
+        # value_path = prefix + "value_net_params"
 
         # print("Saving parameters to {}, {}, {} and {}".format(policy_path, q1_path, q2_path, value_path))
         print("Saving parameters to {}, {}, {}".format(q1_path, q2_path, policy_path))
@@ -150,15 +152,15 @@ class SAC:
         torch.save(self.policy_net.state_dict(), policy_path)
         # torch.save(self.value_net.state_dict(), value_path)
 
-    def load_networks_parameters(self, params_path):
-        if params_path is not None:
-            print("Loading parameters from {}".format(params_path))
+    def load_networks_parameters(self, params_dir):
+        if params_dir is not None:
+            print("Loading parameters from {}".format(params_dir))
 
-            policy_path = params_path + "/" + "policy_net_params"
+            policy_path = params_dir + "/" + "policy_net_params"
             self.policy_net.load_state_dict(torch.load(policy_path))
 
-            q1_path = params_path + "/" + "q1_net_params"
-            q2_path = params_path + "/" + "q2_net_params"
+            q1_path = params_dir + "/" + "q1_net_params"
+            q2_path = params_dir + "/" + "q2_net_params"
             self.q_net1.load_state_dict(torch.load(q1_path))
             self.q_net2.load_state_dict(torch.load(q2_path))
 

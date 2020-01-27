@@ -5,9 +5,9 @@ from texttable import Texttable
 import traceback
 from warnings import simplefilter
 
-from train import train, test
+from simulator import train, test
 from sac import SAC
-from utils import FeaturizedStates, NormalizedActions, build_argsparser, params_grid_search
+from utils import FeaturizedStates, NormalizedActions, build_argsparser, params_grid_search, save_plot
 
 
 def main():
@@ -17,8 +17,9 @@ def main():
     args = parser.parse_args()
 
     # environment setup
-    # env = NormalizedActions(gym.make("Pendulum-v0"))
-    env = FeaturizedStates(NormalizedActions(gym.make("Pendulum-v0")))
+
+    # env = NormalizedActions(gym.make(env))
+    env = FeaturizedStates(NormalizedActions(gym.make("MountainCarContinuous-v0")))
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
     env.seed(args.seed)
@@ -32,34 +33,39 @@ def main():
         params_grid_search(env, args)
     else:
         if args.verbose >= 1:
-            print("Setup completed. Settings:\n")
             t = Texttable()
             t.set_cols_dtype(['t', 'e'])
-            t.add_rows([["Argument", "Value"]] + [[arg, getattr(args, arg)] for arg in vars(args)])
+            t.add_rows([["Argument", "Value"]] +
+                       [[arg, getattr(args, arg)] for arg in vars(args)] +
+                       [["Device", agent.device]])
             print(t.draw())
-
-            print("\nUsing device: {}".format(torch.cuda.get_device_properties(agent.device)))
-            print("\nStarting training.")
+            print("Setup completed. Settings shown in the table above.\n")
 
         # training
-        try:
-            train(env, agent, args)
-        except KeyboardInterrupt:
-            print("\nInterrupt received.")
-        except Exception:
-            traceback.print_exc()
-        finally:
-            print("\nTraining terminated.")
-            if args.save_params is not None:
-                agent.save_networks_parameters(args.save_params)
-
-            env.close()
-
-        if args.testing:
-            input("\nPress ENTER to begin testing.")
+        if args.train:
+            input("\nPress any key to begin training.")
             try:
-                env = FeaturizedStates(NormalizedActions(gym.make("Pendulum-v0")))
-                test(env, agent, args.testing_steps)
+                train(env, agent, args)
+            except KeyboardInterrupt:
+                print("\nInterrupt received.")
+            except Exception:
+                traceback.print_exc()
+            finally:
+                print("\nTraining terminated.")
+                if args.save_params:
+                    agent.save_networks_parameters(args.save_params_dir)
+
+                if args.plot:
+                    save_plot()
+
+                env.close()
+
+        # testing
+        if args.test:
+            input("\nPress any key to begin testing.")
+            try:
+                env = FeaturizedStates(NormalizedActions(gym.make("MountainCarContinuous-v0")))
+                test(env, agent, args.test_episodes)
             except KeyboardInterrupt:
                 print("\nInterrupt received.")
             except Exception:
