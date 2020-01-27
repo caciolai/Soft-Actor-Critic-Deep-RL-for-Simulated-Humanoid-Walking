@@ -39,7 +39,7 @@ def main():
                        [[arg, getattr(args, arg)] for arg in vars(args)] +
                        [["Device", agent.device]])
             print(t.draw())
-            print("Setup completed. Settings shown in the table above.\n")
+            print("\nSetup completed. Settings shown in the table above.")
 
         # training
         if args.train:

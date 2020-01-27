@@ -56,12 +56,12 @@ def train(env, agent, args, return_type=0):
             msg = "Episode: {}. Steps: {}. Episode steps: {}. Episode return: {:.3f}.\n".format(
                 i_episode, total_steps, i_step, episode_return
             )
-            if args.exploratory_steps > total_steps:
-                msg += "Exploratory steps left: {}. ".format(args.exploratory_steps - total_steps)
             if args.learning_starts > total_steps:
                 msg += "Learning starts in: {} steps. ".format(args.learning_starts - total_steps)
-            if epsilon > 0:
-                msg += "Epsilon: {}.".format(epsilon)
+            if args.exploratory_steps > total_steps:
+                msg += "Exploratory steps left: {}. ".format(args.exploratory_steps - total_steps)
+            elif epsilon > 0:
+                msg += "Epsilon: {:.3f}.".format(epsilon)
 
             print(msg)
 

@@ -135,7 +135,6 @@ def smooth(data, smoothness=0.25):
     for i, data_point in enumerate(data):
         a = max(0, int(i - k))
         b = min(n, int(i + k))
-        print(i, n, a, b)
         smoothed_val = np.mean(data[a:b+1])
         smoothed.append(smoothed_val)
 
@@ -152,7 +151,7 @@ def plot_data(data, title, x_label, y_label):
     plt.ylabel(y_label)
     plt.grid(True)
     plt.draw()
-    plt.pause(0.05)
+    plt.pause(0.01)
 
 def plot_episodes_return(episodes_return):
     title = "Return per episode"
