@@ -3,10 +3,12 @@ import itertools
 import numpy as np
 
 from replay_buffer import ReplayBuffer
-from utils import plot_episodes_reward
 
-
-def train(env, agent, args):
+############################################
+# return type: 0 -> no return
+#              1 -> return cumulated return
+############################################
+def train(env, agent, args, return_type=0):
 
     if args.max_episode_steps is not None:
         env.set_max_episode_steps(args.max_episode_steps)
@@ -43,8 +45,9 @@ def train(env, agent, args):
             replay_buffer.append(state, action, reward, next_state, done)
 
             if total_steps > args.learning_starts and len(replay_buffer) > args.batch_size:
-                agent.update(replay_buffer, args.batch_size, updates)
-                updates += 1
+                for _ in range(args.gradient_steps):
+                    agent.update(replay_buffer, args.batch_size, updates)
+                    updates += 1
 
 
             state = next_state
@@ -56,12 +59,14 @@ def train(env, agent, args):
                 break
 
         returns.append(episode_return)
-        print("Episode: {}. Steps: {}. Episode steps: {}. Episode return: {}".format(
-            i_episode, total_steps, i_step, episode_return
-        ))
+        if args.verbose >= 1:
+            print("Episode: {}. Steps: {}. Episode steps: {}. Episode return: {}".format(
+                i_episode, total_steps, i_step, episode_return
+            ))
 
         if args.plot and i_episode % args.plot_interval == 0:
-            plot_episodes_reward(returns)
+            from utils import plot_episodes_return
+            plot_episodes_return(returns)
 
         if args.max_episodes is not None and i_episode >= args.max_episodes:
             break
@@ -74,6 +79,9 @@ def train(env, agent, args):
                 epsilon -= args.epsilon_decrease
             elif args.epsilon_decay is not None:
                 epsilon *= args.epsilon_decay
+
+    if return_type == 1:
+        return np.array(returns).sum()
 
 
 

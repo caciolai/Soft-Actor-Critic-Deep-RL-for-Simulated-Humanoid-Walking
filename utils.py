@@ -1,11 +1,21 @@
 import argparse
-
 import gym
 from gym import spaces
 import numpy as np
 import sklearn, sklearn.pipeline
 from sklearn.kernel_approximation import RBFSampler
 import matplotlib.pyplot as plt
+
+import skopt
+import joblib
+
+from train import train
+from sac import SAC
+
+
+ARGS = None
+ENV = None
+
 
 def build_parser():
     parser = argparse.ArgumentParser(description="PyTorch SAC")
@@ -39,6 +49,9 @@ def build_parser():
 
     parser.add_argument("--batch_size", type=int, default=256, metavar="",
                         help="Batch size (default: 256)")
+
+    parser.add_argument("--gradient_steps", type=int, default=1, metavar="",
+                        help="Gradient steps per simulator step (default: 1)")
 
     parser.add_argument("--seed", type=int, default=0, metavar="",
                         help="Random seed (default: 0)")
@@ -78,9 +91,6 @@ def build_parser():
                         help="Number of exploratory (i.e. with random actions) "
                              "initial steps (default: None)")
 
-    parser.add_argument("--gradient_steps", type=int, default=1, metavar="",
-                        help="Gradient steps per simulator step (default: 1)")
-
     parser.add_argument("--target_update_interval", type=int, default=1, metavar="",
                         help="Value target update per number of updates per step (default: 1)")
 
@@ -101,6 +111,10 @@ def build_parser():
 
     parser.add_argument("--plot_interval", type=int, default=1, metavar="",
                         help="Number of episodes between plots (default: 1)")
+
+    parser.add_argument("--grid_search", action="store_true",
+                        help="Perform a grid search on hyperparameters instead of usual training "
+                             "(default: False)")
 
     return parser
 
@@ -127,11 +141,11 @@ def plot_data(data, title, x_label, y_label, smoothness=0.6):
     plt.draw()
     plt.pause(0.1)
 
-def plot_episodes_reward(episodes_reward_list):
-    title = "Reward per episode"
+def plot_episodes_return(episodes_return):
+    title = "Return per episode"
     x_label = "Episode"
-    y_label = "Reward"
-    plot_data(episodes_reward_list, title, x_label, y_label)
+    y_label = "Return"
+    plot_data(episodes_return, title, x_label, y_label)
 
 
 
@@ -198,3 +212,36 @@ class FeaturizedStates(gym.ObservationWrapper):
         return featurized[0]
 
 
+def params_grid_search(env, args, n_calls=100, verbose=True):
+    global ENV, ARGS
+    ENV = env
+    ARGS = args
+
+    params_range_list = [
+        np.linspace(0.90, 0.99),    # gamma
+        np.logspace(-4, -1, 10),    # initial_alpha
+        np.logspace(-4, -1, 10)     # lr
+    ]
+
+    res = skopt.gp_minimize(func=cumulated_loss,
+                            dimensions=params_range_list,
+                            n_calls=n_calls,
+                            verbose=verbose)
+
+    print(res.x, res.fun)
+    joblib.dump(res, open('res.pkl', 'wb'))
+
+
+def cumulated_loss(params):
+    global ENV, ARGS
+    gamma, initial_alpha, lr = params
+    ARGS.gamma = gamma
+    ARGS.initial_alpha = initial_alpha
+    ARGS.lr = lr
+    ARGS.max_episodes = 200
+
+    agent = SAC(ENV.observation_space, ENV.action_space, ARGS)
+
+    cumulated_return = train(ENV, agent, ARGS, return_type=1)
+    ENV.close()
+    return -cumulated_return
