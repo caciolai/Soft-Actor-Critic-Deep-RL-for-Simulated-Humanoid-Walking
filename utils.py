@@ -141,7 +141,7 @@ def mean_k(data, k):
 
     return mean_k_data
 
-def plot_data(data, title, x_label, y_label, smoothness=0.01):
+def plot_data(data, title, x_label, y_label):
     if not mlp.is_interactive():
         plt.ion()
     plt.clf()
@@ -150,8 +150,8 @@ def plot_data(data, title, x_label, y_label, smoothness=0.01):
     plt.xlabel(x_label)
     plt.ylabel(y_label)
     plt.grid(True)
-    plt.draw()
-    plt.pause(0.01)
+    plt.show()
+    plt.pause(0.001)
 
 def plot_episodes_return(episodes_return):
     title = "Return per episode"
@@ -162,6 +162,7 @@ def plot_episodes_return(episodes_return):
 def plot_mean_k_episodes_return(episodes_return, frac=0.1):
     sns.set()
     k = int(np.ceil(frac * len(episodes_return)))
+    k = min(k, 100)
     title = "Mean {} episode return".format(k)
     x_label = "Episode"
     y_label = "Return"
@@ -169,11 +170,11 @@ def plot_mean_k_episodes_return(episodes_return, frac=0.1):
 
 def save_plot():
     plt.ioff()
-    dir = "Plots/"
-    if not os.path.exists(dir):
-        os.makedirs(dir)
+    plots_dir = "Plots/"
+    if not os.path.exists(plots_dir):
+        os.makedirs(plots_dir)
 
-    fname = dir + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + "_plot"
+    fname = os.path.join(plots_dir, datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + "_plot")
     print("Saving plot to {}.".format(fname))
     plt.savefig(fname)
 
