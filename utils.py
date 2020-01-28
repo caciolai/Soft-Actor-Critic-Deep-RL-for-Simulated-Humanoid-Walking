@@ -1,7 +1,6 @@
 import argparse
 import datetime
 import os
-
 import gym
 from gym import spaces
 import numpy as np
@@ -9,16 +8,7 @@ import sklearn, sklearn.pipeline
 from sklearn.kernel_approximation import RBFSampler
 import matplotlib as mlp
 import matplotlib.pyplot as plt
-
-import skopt
-import joblib
-
-from simulator import train
-from sac import SAC
-
-
-ARGS = None
-ENV = None
+import seaborn as sns
 
 
 def build_argsparser():
@@ -144,9 +134,9 @@ def mean_k(data, k):
     n = len(data)
     mean_k_data = list()
     for i, datapoint in enumerate(data):
-        a = max(0, i-k)
-        b = min(n, i+k)
-        mean_k_datapoint = np.mean(data[a, b+1])
+        a = max(0, int(np.ceil(i - k/2)))
+        b = min(n, int(np.floor(i + k/2)))
+        mean_k_datapoint = np.mean(data[a:b+1])
         mean_k_data.append(mean_k_datapoint)
 
     return mean_k_data
@@ -169,8 +159,10 @@ def plot_episodes_return(episodes_return):
     y_label = "Return"
     plot_data(smooth(episodes_return, 0.1), title, x_label, y_label)
 
-def plot_mean_k_episodes_return(episodes_return, k=100):
-    title = "Mean {} episodes return".format(k)
+def plot_mean_k_episodes_return(episodes_return, frac=0.1):
+    sns.set()
+    k = int(np.ceil(frac * len(episodes_return)))
+    title = "Mean {} episode return".format(k)
     x_label = "Episode"
     y_label = "Return"
     plot_data(mean_k(episodes_return, k), title, x_label, y_label)
@@ -247,38 +239,3 @@ class FeaturizedStates(gym.ObservationWrapper):
         featurized = self.featurizer.transform(scaled)
         return featurized[0]
 
-
-def params_grid_search(env, args, n_calls=100, verbose=True):
-    global ENV, ARGS
-    ENV = env
-    ARGS = args
-
-    params_range_list = [
-        np.linspace(0.90, 0.99),    # gamma
-        np.logspace(-4, -1, 10),    # initial_alpha
-        np.logspace(-4, -1, 10)     # lr
-    ]
-
-    res = skopt.gp_minimize(func=cumulated_loss,
-                            dimensions=params_range_list,
-                            n_calls=n_calls,
-                            verbose=verbose)
-
-    print(res.x, res.fun)
-    joblib.dump(res, open('res.pkl', 'wb'))
-
-
-def cumulated_loss(params):
-    global ENV, ARGS
-    gamma, initial_alpha, lr = params
-    ARGS.gamma = gamma
-    ARGS.initial_alpha = initial_alpha
-    ARGS.lr = lr
-    ARGS.max_episodes = 200
-
-    agent = SAC(ENV.observation_space, ENV.action_space, ARGS)
-
-    returns = train(ENV, agent, ARGS)
-    cumulated_return = returns.sum()
-    ENV.close()
-    return -cumulated_return

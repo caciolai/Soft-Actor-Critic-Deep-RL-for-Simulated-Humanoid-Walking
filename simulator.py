@@ -2,6 +2,7 @@ import itertools
 import numpy as np
 
 from replay_buffer import ReplayBuffer
+from utils import plot_mean_k_episodes_return
 
 
 def train(env, agent, args, return_type=0):
@@ -69,8 +70,6 @@ def train(env, agent, args, return_type=0):
             print(summary)
 
         if args.plot and i_episode % args.plot_interval == 0:
-            from utils import plot_episodes_return, \
-                plot_mean_k_episodes_return # to avoid import cycle at the beginning
             plot_mean_k_episodes_return(returns)
 
         if args.train_episodes is not None and i_episode >= args.train_episodes:
@@ -89,19 +88,26 @@ def train(env, agent, args, return_type=0):
 
 
 def test(env, agent, test_episodes):
-    episodes = 0
-    for _ in itertools.count(1):
-        episodes += 1
+    total_steps = 0
+    for i_episode in itertools.count(1):
+        episode_return = 0
         state = env.reset()
-        for _ in range(env.get_max_episode_steps()):
+        for i_step in itertools.count(0):
+            total_steps += 1
             env.render()
             action = agent.choose_action(state)
             state, reward, done, info = env.step(action)
+            episode_return += reward
             if done:
                 break
 
+        summary = "Episode: {}. Steps: {}. Episode steps: {}. Episode return: {:.3f}.\n".format(
+            i_episode, total_steps, i_step, episode_return
+        )
+        print(summary)
+
         if test_episodes is not None and \
-        episodes >= test_episodes:
+        i_episode >= test_episodes:
             break
     env.close()
 
