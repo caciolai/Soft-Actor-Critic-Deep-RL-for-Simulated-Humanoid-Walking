@@ -95,7 +95,7 @@ def main():
             agent.load_networks_parameters(PARAMS_DIR)
 
             input("\nPress any key to begin testing.")
-            test(env, agent, args.test_episodes)
+            test(env, agent, args)
         except KeyboardInterrupt:
             # to stop testing
             print("\nInterrupt received.")

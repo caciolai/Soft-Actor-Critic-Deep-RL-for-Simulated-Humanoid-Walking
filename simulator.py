@@ -128,7 +128,7 @@ def train(env, agent, args):
     return np.array(returns)
 
 
-def test(env, agent, args, test_episodes=None):
+def test(env, agent, args):
     """
     Tests the given agent in the given environment
     :param env: environment
@@ -137,8 +137,6 @@ def test(env, agent, args, test_episodes=None):
     :type agent: SAC
     :param args: command-line arguments
     :type args: argparse parsed object
-    :param test_episodes: number of test episodes to perform
-                            (default: None, so nonstop)
     :return: array with the returns per episode cumulated by the agent during training
     :rtype: numpy array of dtype float32
     """
@@ -165,8 +163,8 @@ def test(env, agent, args, test_episodes=None):
         if args.plot and i_episode % args.plot_interval == 0:
             plot_mean_k_episodes_return(returns)
 
-        if test_episodes is not None and \
-        i_episode >= test_episodes:
+        if args.test_episodes is not None and \
+        i_episode >= args.test_episodes:
             break
 
-        return returns
+    return returns
