@@ -4,7 +4,6 @@ import numpy as np
 class ReplayBuffer:
     """
     A class used to represent the replay buffer
-
     It holds all the transitions (s_t, a_t, r_t, s_{t+1}, d_t) observed at timestep t
 
     Attributes
@@ -22,10 +21,15 @@ class ReplayBuffer:
     append(s, a, r, s', d)
         Appends a transition to the buffer
 
-    sample(batch_size)
+    sample(batch_size) : batch
         Returns a randomly drawn sample of size batch_size from the buffer
     """
     def __init__(self, capacity):
+        """
+        Constructor
+        :param capacity: capacity
+        :type capacity: int
+        """
         self.capacity = capacity
         self.buffer = []
         self.position = 0
