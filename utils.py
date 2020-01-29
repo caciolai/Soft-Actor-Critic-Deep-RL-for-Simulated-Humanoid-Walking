@@ -2,16 +2,20 @@ import argparse
 import datetime
 import os
 import gym
-from gym import spaces
 import numpy as np
-import sklearn, sklearn.pipeline
-from sklearn.kernel_approximation import RBFSampler
 import matplotlib as mlp
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+"""
+This file contains utility methods needed in other files of the project
+"""
 
-def build_argsparser():
+def build_argparser():
+    """
+    Builds the argparser to read arguments from command-line
+    :return: the parser with all the arguments set and ready to be read
+    """
     parser = argparse.ArgumentParser(description="PyTorch SAC")
 
     parser.add_argument("--initial_alpha", type=float, default=None, metavar="",
@@ -112,25 +116,18 @@ def build_argsparser():
     parser.add_argument("--plot_interval", type=int, default=1, metavar="",
                         help="Number of episodes between plots (default: 1)")
 
-    parser.add_argument("--grid_search", action="store_true",
-                        help="Perform a grid search on hyperparameters instead of usual training")
-
     return parser
 
 
-def smooth(data, smoothness):
-    smoothed = list()
-    n = len(data)
-    k = int(smoothness * len(data) / 2)
-    for i, datapoint in enumerate(data):
-        a = max(0, int(i - k))
-        b = min(n, int(i + k))
-        smoothed_val = np.mean(data[a:b+1])
-        smoothed.append(smoothed_val)
-
-    return smoothed
-
 def mean_k(data, k):
+    """
+    Given some data, each data point is replaced by its local k mean
+    :param data: data
+    :type: list
+    :param k: size of the neighborhood to consider for averaging
+    :type k: int
+    :return: the averaged data
+    """
     n = len(data)
     mean_k_data = list()
     for i, datapoint in enumerate(data):
@@ -141,25 +138,43 @@ def mean_k(data, k):
 
     return mean_k_data
 
-def plot_data(data, title, x_label, y_label):
-    if not mlp.is_interactive():
-        plt.ion()
-    plt.clf()
-    plt.plot(np.arange(1, len(data)+1), data)
-    plt.title(title)
-    plt.xlabel(x_label)
-    plt.ylabel(y_label)
-    plt.grid(True)
-    plt.show()
-    plt.pause(0.001)
 
-def plot_episodes_return(episodes_return):
-    title = "Return per episode"
-    x_label = "Episode"
-    y_label = "Return"
-    plot_data(smooth(episodes_return, 0.1), title, x_label, y_label)
+def plot_data(data, title, x_label, y_label):
+    """
+    Plots data interactively
+    :param data: data to be plot
+    :type data: list or numpy array or similar
+    :param title: title of the plot figure
+    :type title: str
+    :param x_label: label for the x-axis
+    :type x_label: str
+    :param y_label: label for the y-axis
+    :type y_label: str
+    :return: None
+    """
+    if not mlp.is_interactive():                    # activate pyplot interactive mode
+        plt.ion()
+    plt.clf()                                       # clear currently drawn figure
+    plt.plot(np.arange(1, len(data)+1), data)       # plot data (x-axis is [1..len(data)])
+    plt.title(title)                                # set title
+    plt.xlabel(x_label)                             # set xlabel
+    plt.ylabel(y_label)                             # set ylabel
+    plt.grid(True)                                  # show grid for ease of visualization
+    plt.show()                                      # show figure
+    plt.pause(0.001)                                # small interval to actually see something in between "frames"
+
 
 def plot_mean_k_episodes_return(episodes_return, frac=0.1):
+    """
+    Plots the mean k episode return obtained in the simulation
+    :param episodes_return: array containing the cumulative reward earned in each episode so far
+    :type episodes_return: list or numpy array
+    :param frac: parameter for smoothing, by default 0.1 meaning each data point gets replaced by
+                    the mean over its neighborhood of size 1/10 of the whole data (so it can be considered
+                    a smoothing coefficient)
+    :type frac: float [0,1]
+    :return: None
+    """
     sns.set()
     k = int(np.ceil(frac * len(episodes_return)))
     k = min(k, 100)
@@ -169,6 +184,11 @@ def plot_mean_k_episodes_return(episodes_return, frac=0.1):
     plot_data(mean_k(episodes_return, k), title, x_label, y_label)
 
 def save_plot():
+    """
+    Saves the currently active figure, in the Plots directory in the current directory,
+    with name based on the current timestamp
+    :return: None
+    """
     plt.ioff()
     plots_dir = "Plots/"
     if not os.path.exists(plots_dir):
@@ -180,19 +200,47 @@ def save_plot():
 
 # action in [-1, 1] to action in [low, high]
 class NormalizedActions(gym.ActionWrapper):
+    """
+    A class that inherits from gym's ActionWrapper, since it is meant to translate actions ``normalized''
+    in [-1,1] to actions in the correct environment action space [low, high]
+    """
     def __init__(self, env):
+        """
+        Constructor that simply calls super class constructor
+        :param env: The environment being wrapped
+        :type env: OpenAI gym environment
+        """
         super().__init__(env)
 
     def action(self, action):
+        """
+        Takes an action in [-1, 1] and translates it to [low, high]
+        :param action: action
+        :type action: numpy array of dtype float32
+        :return: translated action
+        """
+        # inherited from gym.ActionWrapper which took it from env
         low = self.action_space.low
         high = self.action_space.high
 
+        # if action is -1, then high terms cancel out and it remains low, the reverse if action is +1
         action = ((high + low) + action*(high - low)) / 2.0
+
+        # should not be needed, but in case actions were in fact outside of [-1, 1] this corrects the above
+        # calculation
         action = np.clip(action, low, high)
 
         return action
 
     def reverse_action(self, action):
+        """
+        Takes an action in [low, high] and translates it back to [-1, 1], thus reversing the above operations
+        Not sure if ever gets executed, but it actually needs to be implemented
+        since it is an abstract method of superclass
+        :param action: action
+        :type action: numpy array of dtype float32
+        :return: translated action
+        """
         low = self.action_space.low
         high = self.action_space.high
 
@@ -202,41 +250,19 @@ class NormalizedActions(gym.ActionWrapper):
         return action
 
     def get_max_episode_steps(self):
+        """
+        Getter to access the protected max_episode_steps of the environment
+        :return: maximum number of timesteps per episode before the environment sends a positive done signal
+        :rtype: int
+        """
         return self.env._max_episode_steps
 
     def set_max_episode_steps(self, num):
+        """
+        Setter to override the time limit of the environment,
+        often needed to ensure enough time for initial exploration
+        :param num: desired maximum number of timesteps per episode
+        :return: None
+        """
         self.env._max_episode_steps = num
-
-
-class FeaturizedStates(gym.ObservationWrapper):
-    def __init__(self, env, n_components=100):
-        super().__init__(env)
-        # Feature Preprocessing: Normalize to zero mean and unit variance
-        # We use a few samples from the observation space to do this
-        observation_examples = np.array([env.observation_space.sample() for _ in range(10000)])
-        self.scaler = sklearn.preprocessing.StandardScaler()
-        self.scaler.fit(observation_examples)
-
-        # Used to convert a state to a featurizes represenation.
-        # We use RBF kernels with different variances to cover different parts of the space
-        obs_dim = env.observation_space.shape[0]
-        features = []
-        variances = np.geomspace(0.1, 10, num=obs_dim)
-        for i in range(1, obs_dim+1):
-            features.append(
-                ("rbf{}".format(i), RBFSampler(gamma=variances[i-1], n_components=n_components))
-            )
-
-        self.featurizer = sklearn.pipeline.FeatureUnion(features)
-        self.featurizer.fit(self.scaler.transform(observation_examples))
-
-        new_obs_dim = obs_dim * n_components
-        self.observation_space = spaces.Box(low=np.array([-1.0 for _ in range(new_obs_dim)]),
-                                            high=np.array([1.0 for _ in range(new_obs_dim)]),
-                                            dtype=np.float32)
-
-    def observation(self, observation):
-        scaled = self.scaler.transform([observation])
-        featurized = self.featurizer.transform(scaled)
-        return featurized[0]
 
