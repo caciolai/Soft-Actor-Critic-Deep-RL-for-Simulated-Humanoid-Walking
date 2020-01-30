@@ -55,7 +55,7 @@ class SAC:
     alpha : torch float scalar
         entropy temperature (controls policy stochasticity)
     entropy_target : torch float scalar
-        entropy target for the environment (see Harnojaa et al. Section 5)
+        entropy target for the environment (see Haarnoja et al. Section 5)
 
     Methods
     -------

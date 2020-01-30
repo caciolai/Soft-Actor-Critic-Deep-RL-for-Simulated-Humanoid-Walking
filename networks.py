@@ -202,7 +202,7 @@ class PolicyNetwork(nn.Module):
         z = normal.sample().to(self.device)
 
         # compute action as the squashed tanh of gaussian prediction multiplied by independent noise,
-        # needed for the reparametrization trick (see Harnojaa et al. paper)
+        # needed for the reparametrization trick (see Haarnoja et al. paper)
         action = torch.tanh(mean + std * z)
 
         # to recover normalized log probabilities (see Harnojaa et al. Appendix "Enforcing Bounds")

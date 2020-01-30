@@ -13,8 +13,8 @@ from utils import NormalizedActions, build_argparser, save_plot
 PARAMS_DIR  = None
 # ENV_NAME    = "MountainCarContinuous-v0"
 # ENV_NAME    = "Pendulum-v0"
-ENV_NAME    = "LunarLanderContinuous-v2"
-# ENV_NAME    = "Humanoid-v2"
+# ENV_NAME    = "LunarLanderContinuous-v2"
+ENV_NAME    = "Humanoid-v2"
 
 
 def main():
