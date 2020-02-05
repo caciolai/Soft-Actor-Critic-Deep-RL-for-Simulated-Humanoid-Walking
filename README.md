@@ -50,7 +50,7 @@ Run `python3 main.py --help` to see the list of command-line options and their m
 
 ### Running the tests
 
-Run `python3 main.py --test --render --plot` to run a random agent on the selected environment. The environment should render as well as an online plot of the return per episode.
+Run `python3 main.py --test --render --plot` to run a random agent on the selected environment. The environment should render as well as an online plot of the return per episode, and a per episode summary should be printed on the terminal.
 
 ## Authors
 
