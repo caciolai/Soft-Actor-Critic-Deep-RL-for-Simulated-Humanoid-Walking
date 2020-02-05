@@ -48,7 +48,7 @@ If all the prerequisites are installed correctly, the project should be ready to
 
 Run `python3 main.py --help` to see the list of command-line options and their meaning.
 
-## Running the tests
+### Running the tests
 
 Run `python3 main.py --test --render --plot` to run a random agent on the selected environment. The environment should render as well as an online plot of the return per episode.
 
