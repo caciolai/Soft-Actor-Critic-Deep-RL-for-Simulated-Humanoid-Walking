@@ -1,4 +1,4 @@
-# ReinforcementLearningProject
+# Soft-Actor-Critic Deep RL for Simulated Humanoid Walking
 
 This is an implementation of the Reinforcement Learning algorithm SAC (as presented in [Soft Actor-Critic: Off-Policy Maximum Entropy Deep Reinforcement Learning with a Stochastic Actor](https://arxiv.org/pdf/1801.01290.pdf) and [Soft Actor-Critic Algorithms and Applications](https://arxiv.org/pdf/1812.05905.pdf)) for the project of the Reinforcement Learning module of the Machine Learning course of the Master in Artificial Intelligence and Robotics (A.Y. 2019/20).
 
