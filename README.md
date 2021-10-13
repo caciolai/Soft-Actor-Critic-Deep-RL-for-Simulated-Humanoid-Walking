@@ -51,8 +51,8 @@ Run `python3 main.py --test --render --plot` to run a random agent on the select
 Run `python3 main.py --help` to see the list of command-line options and their meaning.
 
 ## Resources used
-- (PyTorch)[https://pytorch.org/get-started/locally/]
-- (OpenAI Gym)[https://gym.openai.com/]
+- [PyTorch](https://pytorch.org/get-started/locally/)
+- [OpenAI Gym](https://gym.openai.com/)
 
 ## Authors
 
