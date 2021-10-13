@@ -4,7 +4,7 @@ This is an implementation of the Reinforcement Learning algorithm SAC (as presen
 
 The implementation is done in Python3 using the PyTorch library and has been tested for the project on the OpenAI Gym's environments [MountainCarContinuous](https://gym.openai.com/envs/MountainCarContinuous-v0/) and [Humanoid](https://gym.openai.com/envs/Humanoid-v2/).
 
-### Prerequisites
+## Prerequisites
 
 Python3 and `pytorch` are required, as well as `gym`. I suggest an installation via Anaconda on an Ubuntu machine. 
 MuJoCo is also needed for running the `gym` environments that depend on it, such as Humanoid.
@@ -40,18 +40,20 @@ sudo apt install ffmpeg
 5. Install additional Python3 packages.
 ```
 pip3 install numpy matplotlib seaborn texttable
-```
-
-### Installing
-
-If all the prerequisites are installed correctly, the project should be ready to run. 
-
-Run `python3 main.py --help` to see the list of command-line options and their meaning.
 
 ### Running the tests
 
 Run `python3 main.py --test --render --plot` to run a random agent on the selected environment. The environment should render as well as an online plot of the return per episode, and a per episode summary should be printed on the terminal.
+```
+
+## Usage
+
+Run `python3 main.py --help` to see the list of command-line options and their meaning.
+
+## Resources used
+- PyTorch
+- OpenAI Gym
 
 ## Authors
 
-* **Andrea Caciolai** - *Main work*
+- **Andrea Caciolai**
